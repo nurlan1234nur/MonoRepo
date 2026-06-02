@@ -1,0 +1,20 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-rose: #e8607a;
+  --color-blush: #f5c6ce;
+  --color-cream: #fdf6f0;
+  --color-deep: #2d1f2e;
+  --color-muted: #9b8a93;
+  --color-card: #fff8f5;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: #efe8f0;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, #f7d4da55 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, #f0e4d755 0%, transparent 60%);
+  min-height: 100vh;
+}
