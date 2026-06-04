@@ -30,3 +30,23 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   }
   return data as T;
 }
+
+// Multipart (зураг) upload. Content-Type-ийг browser өөрөө boundary-тэй тавина.
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const token = getToken();
+  const res = await fetch(`/api${path}`, {
+    method: 'POST',
+    body: form,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error((data as { error?: string }).error ?? 'Алдаа гарлаа');
+  }
+  return data as T;
+}
+
+// Server-ийн статик зам (/uploads/...) — same-origin тул шууд буцаана.
+export function assetUrl(path: string): string {
+  return path;
+}

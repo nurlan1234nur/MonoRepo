@@ -1,0 +1,24 @@
+services:
+  server:
+    build: ./server
+    env_file:
+      - ./server/.env          # MONGODB_URI, JWT_SECRET энд байна (Atlas)
+    environment:
+      - PORT=4000
+      - CLIENT_ORIGIN=http://localhost:8080   # nginx-ийн public origin (CORS/socket)
+    expose:
+      - "4000"
+    volumes:
+      - uploads:/app/uploads   # upload хийсэн зураг container rebuild хийсэн ч хадгалагдана
+    restart: unless-stopped
+
+  client:
+    build: ./client
+    depends_on:
+      - server
+    ports:
+      - "8080:80"             # http://localhost:8080 дээр нээгдэнэ
+    restart: unless-stopped
+
+volumes:
+  uploads:

@@ -4,7 +4,9 @@ const messageSchema = new Schema(
   {
     couple: { type: Schema.Types.ObjectId, ref: 'Couple', required: true, index: true },
     sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    text: { type: String, required: true, trim: true, maxlength: 4000 },
+    text: { type: String, default: '', trim: true, maxlength: 4000 },
+    imageUrl: { type: String, default: '' }, // зураг илгээсэн бол
+    deleted: { type: Boolean, default: false }, // татаж авсан бол ("X зурвасаа татлаа")
     special: { type: Boolean, default: false },
   },
   { timestamps: true },

@@ -1,0 +1,21 @@
+{
+  "name": "nous-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "description": "nous — хосуудын апп. Бүх workflow-г нэг цэгээс удирдах root скриптүүд.",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "typecheck": "npm --prefix server run typecheck && npm --prefix client run build",
+    "build:server": "docker build -t nurlannn/love-server:latest ./server",
+    "build:client": "docker build -t nurlannn/love-client:latest ./client",
+    "build:images": "npm run build:server && npm run build:client",
+    "push:images": "docker push nurlannn/love-server:latest && docker push nurlannn/love-client:latest",
+    "release": "npm run build:images && npm run push:images"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

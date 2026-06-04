@@ -41,7 +41,7 @@ export default function CoupleSetup() {
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-sm bg-card rounded-3xl shadow-xl p-8 space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-serif italic text-rose mb-1">Хосоо холбоё ♥</h1>
+          <h1 className="text-2xl font-bold text-rose mb-1">Хосоо холбоё ♥</h1>
           <p className="text-muted text-sm">Шинэ хос үүсгэх эсвэл урилгын кодоор нэгдэх</p>
         </div>
 

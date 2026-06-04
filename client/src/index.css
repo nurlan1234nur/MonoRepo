@@ -4,17 +4,52 @@
   --color-rose: #e8607a;
   --color-blush: #f5c6ce;
   --color-cream: #fdf6f0;
+  --color-warm: #f9ede6;
   --color-deep: #2d1f2e;
   --color-muted: #9b8a93;
   --color-card: #fff8f5;
+  --color-gold: #c9a96e;
+  --color-purple: #9b6eb5;
+
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
 }
 
+html,
 body {
   margin: 0;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background: #efe8f0;
-  background-image:
-    radial-gradient(ellipse at 20% 20%, #f7d4da55 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, #f0e4d755 0%, transparent 60%);
-  min-height: 100vh;
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #fdf6f0;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Scrollbar нуух (prototype шиг) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes pulse-heart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}
+.animate-pulse-heart {
+  animation: pulse-heart 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-blink {
+  animation: blink 2s ease-in-out infinite;
 }

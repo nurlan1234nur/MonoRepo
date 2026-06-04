@@ -1,0 +1,27 @@
+# Серверт ажиллуулах compose — build хийдэггүй, DockerHub-аас image татаж ажиллуулна.
+# Ашиглах:  docker compose -f docker-compose.prod.yml pull
+#           docker compose -f docker-compose.prod.yml up -d
+services:
+  server:
+    image: nurlannn/love-server:latest
+    env_file:
+      - ./server/.env          # MONGODB_URI, JWT_SECRET энд байна (Atlas)
+    environment:
+      - PORT=4000
+      - CLIENT_ORIGIN=${CLIENT_ORIGIN:-http://localhost:8080}  # серверийн public origin (CORS/socket)
+    expose:
+      - "4000"
+    volumes:
+      - uploads:/app/uploads   # upload хийсэн зураг container rebuild хийсэн ч хадгалагдана
+    restart: unless-stopped
+
+  client:
+    image: nurlannn/love-client:latest
+    depends_on:
+      - server
+    ports:
+      - "8080:80"             # http://<сервер-ip>:8080 дээр нээгдэнэ
+    restart: unless-stopped
+
+volumes:
+  uploads:

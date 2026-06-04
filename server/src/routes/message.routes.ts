@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { Message } from '../models/Message.js';
+import { User } from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireCouple } from '../middleware/couple.js';
+import { upload } from '../config/uploads.js';
 import { emitToCouple } from '../realtime/socket.js';
 
 export const messageRouter = Router();
@@ -43,5 +45,71 @@ messageRouter.post(
     emitToCouple(req.coupleId!, 'message:new', populated);
 
     res.status(201).json({ message: populated });
+  }),
+);
+
+// Зураг илгээх (multipart/form-data, талбар: image, caption?).
+messageRouter.post(
+  '/image',
+  upload.single('image'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'Зураг шаардлагатай' });
+      return;
+    }
+    const text = typeof req.body.caption === 'string' ? req.body.caption.slice(0, 500) : '';
+    const message = await Message.create({
+      couple: req.coupleId,
+      sender: req.userId,
+      text,
+      imageUrl: `/uploads/${req.file.filename}`,
+    });
+    const populated = await message.populate('sender', 'name avatar');
+    emitToCouple(req.coupleId!, 'message:new', populated);
+    res.status(201).json({ message: populated });
+  }),
+);
+
+// Чат бүхэлд нь цэвэрлэх — хосын бүх зурвасыг устгана (хоёуланд нь).
+messageRouter.delete(
+  '/',
+  asyncHandler(async (req, res) => {
+    await Message.deleteMany({ couple: req.coupleId });
+    emitToCouple(req.coupleId!, 'messages:cleared', { by: req.userId });
+    res.json({ ok: true });
+  }),
+);
+
+// Зурвас татаж авах (unsend) — зөвхөн өөрийн зурвас. Агуулгыг арилгаж "татлаа" болгоно.
+messageRouter.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const message = await Message.findOne({ _id: req.params.id, couple: req.coupleId });
+    if (!message) {
+      res.status(404).json({ error: 'Зурвас олдсонгүй' });
+      return;
+    }
+    if (message.sender.toString() !== req.userId) {
+      res.status(403).json({ error: 'Зөвхөн өөрийн зурвасаа татаж авна' });
+      return;
+    }
+    message.deleted = true;
+    message.text = '';
+    message.imageUrl = '';
+    await message.save();
+    const populated = await message.populate('sender', 'name avatar');
+    emitToCouple(req.coupleId!, 'message:update', populated);
+    res.json({ message: populated });
+  }),
+);
+
+// Чатыг "уншсан" гэж тэмдэглэх — нөгөө талд "Үзсэн" харагдана.
+messageRouter.post(
+  '/read',
+  asyncHandler(async (req, res) => {
+    const at = new Date();
+    await User.findByIdAndUpdate(req.userId, { lastReadAt: at });
+    emitToCouple(req.coupleId!, 'message:read', { userId: req.userId, at: at.toISOString() });
+    res.json({ ok: true });
   }),
 );

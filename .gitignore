@@ -13,6 +13,9 @@ build/
 **/.env
 !**/.env.example
 
+# runtime uploads (user-uploaded images, avatars) — серверт үүснэ
+server/uploads/
+
 # logs
 *.log
 npm-debug.log*

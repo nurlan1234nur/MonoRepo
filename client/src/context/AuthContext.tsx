@@ -1,13 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api, setToken, clearToken, getToken } from '../lib/api';
 import { disconnectSocket } from '../lib/socket';
+import { applyTheme } from '../lib/theme';
 import type { User } from '../types';
 
 interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, avatar?: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -39,19 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, []);
 
-  async function login(email: string, password: string) {
+  // Хэрэглэгчийн theme өөрчлөгдөх бүрд (нэвтрэх, профайл засах) апп даяар хэрэгжүүлнэ.
+  useEffect(() => {
+    applyTheme(user?.theme);
+  }, [user?.theme]);
+
+  async function login(username: string, password: string) {
     const { token, user } = await api<{ token: string; user: User }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    setToken(token);
-    setUser(user);
-  }
-
-  async function register(email: string, password: string, name: string, avatar?: string) {
-    const { token, user } = await api<{ token: string; user: User }>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, name, avatar }),
+      body: JSON.stringify({ username, password }),
     });
     setToken(token);
     setUser(user);
@@ -64,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refresh }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );
