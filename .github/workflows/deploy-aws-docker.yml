@@ -98,4 +98,6 @@ jobs:
           script: |
             set -e
             cd "${{ secrets.AWS_DEPLOY_PATH }}"
+            git fetch origin
+            git reset --hard "${{ github.sha }}"
             bash scripts/deploy.sh
