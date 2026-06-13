@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, apiUpload } from '../lib/api';
+import { api, apiUpload, assetUrl } from '../lib/api';
 import { compressImage } from '../lib/image';
 import { getSocket } from '../lib/socket';
 import { useAuth } from '../context/AuthContext';
@@ -323,7 +323,7 @@ export default function Chat() {
                     className="min-w-0 cursor-pointer select-none"
                   >
                     {m.imageUrl ? (
-                      <img src={m.imageUrl} alt="" className="max-h-64 rounded-2xl object-cover shadow-sm" />
+                      <img src={assetUrl(m.imageUrl)} alt="" className="max-h-64 rounded-2xl object-cover shadow-sm" />
                     ) : (
                       <div
                         className={`break-words rounded-[18px] px-3.5 py-2 text-[13.5px] leading-snug ${

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../lib/api';
+import { api, assetUrl } from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
@@ -67,7 +67,7 @@ export default function Memories() {
                   key={m._id}
                   className="relative aspect-square overflow-hidden rounded-2xl shadow-md"
                 >
-                  <img src={m.imageUrl} alt={m.caption} className="h-full w-full object-cover" />
+                  <img src={assetUrl(m.imageUrl)} alt={m.caption} className="h-full w-full object-cover" />
                   {m.author._id === user?.id && (
                     <button
                       onClick={() => void deleteMoment(m._id)}

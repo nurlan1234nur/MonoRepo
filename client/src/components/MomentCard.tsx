@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import { api, assetUrl } from '../lib/api';
 import { formatTime } from '../lib/date';
 import Avatar from './Avatar';
 import type { Moment } from '../types';
@@ -30,7 +30,7 @@ export default function MomentCard({ moment, myId, onUpdated }: Props) {
   return (
     <div className="mb-3.5 overflow-hidden rounded-3xl bg-card shadow-[0_3px_22px_rgba(45,31,46,0.09)]">
       <div className="relative">
-        <img src={moment.imageUrl} alt={moment.caption} className="h-56 w-full object-cover" />
+        <img src={assetUrl(moment.imageUrl)} alt={moment.caption} className="h-56 w-full object-cover" />
         <div className="absolute left-3.5 top-3 flex items-center gap-1.5 rounded-xl bg-white/90 py-0.5 pl-1 pr-2.5 text-[11px] font-semibold text-deep backdrop-blur">
           <Avatar value={moment.author.avatar} className="h-5 w-5" emojiClassName="text-[11px]" />
           {moment.author.name}

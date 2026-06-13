@@ -47,6 +47,14 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
 }
 
 // Server-ийн статик зам (/uploads/...) — same-origin тул шууд буцаана.
+const ASSET_ORIGIN = import.meta.env.VITE_ASSET_ORIGIN?.replace(/\/$/, '') ?? '';
+
 export function assetUrl(path: string): string {
+  if (!path || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+    return path;
+  }
+  if (ASSET_ORIGIN && path.startsWith('/')) {
+    return `${ASSET_ORIGIN}${path}`;
+  }
   return path;
 }
