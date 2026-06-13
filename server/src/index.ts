@@ -20,6 +20,11 @@ const app = express();
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 
+app.use('/api', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
 // Upload хийсэн зургуудыг статикаар үйлчилнэ (nginx /uploads-ийг энд proxy хийнэ).
 app.use('/uploads', express.static(uploadsDir));
 
