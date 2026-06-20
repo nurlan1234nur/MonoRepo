@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast';
 import Sheet from '../components/Sheet';
 import TimeCapsuleSheet from '../components/TimeCapsuleSheet';
 import DreamJarSheet from '../components/DreamJarSheet';
+import SongOfUsSheet from '../components/SongOfUsSheet';
 import PasswordInput from '../components/PasswordInput';
 import { api } from '../lib/api';
 
@@ -16,7 +17,7 @@ interface Feat {
   desc: string;
   badge?: string;
   toast: string;
-  action?: 'capsule' | 'dream-jar';
+  action?: 'capsule' | 'dream-jar' | 'song-of-us';
 }
 
 const SECTIONS: { title: string; items: Feat[] }[] = [
@@ -24,7 +25,7 @@ const SECTIONS: { title: string; items: Feat[] }[] = [
     title: '🌟 Тусгай зүйлс',
     items: [
       { icon: '🫙', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Dream Jar', desc: 'Хамтдаа биелүүлэх хүслийн сан', toast: '', action: 'dream-jar' },
-      { icon: '🎵', color: 'bg-gradient-to-br from-[#e8d4f7] to-[#d4c4f0]', name: 'Song of Us', desc: 'Долоо хоног бүрийн хамтын дуу', toast: '🎵 Song of Us — удахгүй!' },
+      { icon: '🎵', color: 'bg-gradient-to-br from-[#e8d4f7] to-[#d4c4f0]', name: 'Song of Us', desc: 'Долоо хоног бүрийн хамтын дуу', toast: '', action: 'song-of-us' },
       { icon: '🕯️', color: 'bg-gradient-to-br from-[#f7eed4] to-[#f0e0b8]', name: 'Цаг Капсул', desc: 'Ирээдүйд нээгдэх нууц захидал', toast: '', action: 'capsule' },
     ],
   },
@@ -58,6 +59,8 @@ export default function More() {
   const [capsuleCount, setCapsuleCount] = useState<number | null>(null);
   const [dreamJarOpen, setDreamJarOpen] = useState(false);
   const [wishCount, setWishCount] = useState<number | null>(null);
+  const [songOpen, setSongOpen] = useState(false);
+  const [hasCurrentSong, setHasCurrentSong] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -65,6 +68,10 @@ export default function More() {
   const [passwordBusy, setPasswordBusy] = useState(false);
 
   function openFeature(feature: Feat) {
+    if (feature.action === 'song-of-us') {
+      setSongOpen(true);
+      return;
+    }
     if (feature.action === 'dream-jar') {
       setDreamJarOpen(true);
       return;
@@ -183,7 +190,11 @@ export default function More() {
                   <div className="text-[15px] font-semibold text-deep">{f.name}</div>
                   <div className="mt-0.5 text-xs leading-snug text-muted">{f.desc}</div>
                 </div>
-                {f.action === 'dream-jar' && wishCount !== null ? (
+                {f.action === 'song-of-us' && hasCurrentSong ? (
+                  <span className="rounded-lg bg-purple px-2 py-0.5 text-[10px] font-bold text-white">
+                    Сонгосон
+                  </span>
+                ) : f.action === 'dream-jar' && wishCount !== null ? (
                   <span className="rounded-lg bg-rose/10 px-2 py-0.5 text-[10px] font-bold text-rose">
                     {wishCount}
                   </span>
@@ -349,6 +360,11 @@ export default function More() {
         open={dreamJarOpen}
         onClose={() => setDreamJarOpen(false)}
         onCountChange={setWishCount}
+      />
+      <SongOfUsSheet
+        open={songOpen}
+        onClose={() => setSongOpen(false)}
+        onCurrentChange={setHasCurrentSong}
       />
     </>
   );

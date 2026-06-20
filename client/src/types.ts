@@ -110,6 +110,18 @@ export interface Wish {
   text: string;
   completed: boolean;
   completedAt: string | null;
-  completedBy: Member | null;
+  completionApprovals: string[];
+  deletionApprovals: string[];
   createdAt: string;
+}
+
+export interface WeeklySong {
+  _id: string;
+  weekStart: string;
+  title: string;
+  artist: string;
+  url: string;
+  selectedBy: Member;
+  createdAt: string;
+  updatedAt: string;
 }

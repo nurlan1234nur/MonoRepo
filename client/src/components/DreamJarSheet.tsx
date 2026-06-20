@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, CircleDot, Plus, Trash2 } from 'lucide-react';
 import Sheet from './Sheet';
 import Avatar from './Avatar';
 import { useToast } from './Toast';
@@ -124,19 +124,38 @@ export default function DreamJarSheet({ open, onClose, onCountChange }: Props) {
         onCountChange?.(next.filter((wish) => !wish.completed).length);
         return sortWishes(next);
       });
+      toast(
+        result.wish.completed
+          ? 'Хоёулаа зөвшөөрлөө — хүсэл биелсэн'
+          : `Биелэлтийн зөвшөөрөл ${result.wish.completionApprovals.length}/2`,
+      );
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Хүсэл шинэчлэхэд алдаа гарлаа');
     }
   }
 
-  async function removeWish(id: string) {
+  async function requestDeletion(wish: Wish) {
+    const hadApproved = wish.deletionApprovals.includes(user?.id ?? '');
     try {
-      await api(`/wishes/${id}`, { method: 'DELETE' });
-      setWishes((current) => {
-        const next = current.filter((wish) => wish._id !== id);
-        onCountChange?.(next.filter((wish) => !wish.completed).length);
-        return next;
-      });
+      const result = await api<{ deleted: boolean; id?: string; wish?: Wish }>(
+        `/wishes/${wish._id}/delete-approval`,
+        { method: 'PATCH' },
+      );
+      if (result.deleted) {
+        setWishes((current) => {
+          const next = current.filter((item) => item._id !== wish._id);
+          onCountChange?.(next.filter((item) => !item.completed).length);
+          return next;
+        });
+        toast('Хоёулаа зөвшөөрлөө — хүсэл устлаа');
+        return;
+      }
+      if (result.wish) {
+        setWishes((current) => sortWishes(
+          current.map((item) => (item._id === wish._id ? result.wish! : item)),
+        ));
+      }
+      toast(hadApproved ? 'Устгах зөвшөөрлөө буцаалаа' : 'Устгахын тулд partner-ийн зөвшөөрөл хүлээж байна');
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Хүсэл устгахад алдаа гарлаа');
     }
@@ -181,31 +200,46 @@ export default function DreamJarSheet({ open, onClose, onCountChange }: Props) {
                   onClick={() => void toggleWish(wish._id)}
                   aria-label={wish.completed ? 'Биелээгүй болгох' : 'Биелсэн болгох'}
                   title={wish.completed ? 'Биелээгүй болгох' : 'Биелсэн болгох'}
-                  className={`mt-0.5 flex-shrink-0 ${wish.completed ? 'text-rose' : 'text-muted'}`}
+                  className={`mt-0.5 flex-shrink-0 ${
+                    wish.completed
+                      ? 'text-rose'
+                      : wish.completionApprovals.includes(user?.id ?? '')
+                        ? 'text-purple'
+                        : 'text-muted'
+                  }`}
                 >
-                  {wish.completed ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+                  {wish.completed ? (
+                    <CheckCircle2 size={22} />
+                  ) : wish.completionApprovals.includes(user?.id ?? '') ? (
+                    <CircleDot size={22} />
+                  ) : (
+                    <Circle size={22} />
+                  )}
                 </button>
                 <div className="min-w-0 flex-1">
                   <p className={`break-words text-sm leading-relaxed ${wish.completed ? 'text-muted line-through' : 'text-deep'}`}>
                     {wish.text}
                   </p>
-                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-muted">
                     <Avatar value={wish.author.avatar} className="h-5 w-5" emojiClassName="text-xs" />
                     <span>{wish.author.name}</span>
-                    {wish.completed && wish.completedBy && <span>· {wish.completedBy.name} биелүүлсэн</span>}
+                    <span>· Биелэлт {wish.completionApprovals.length}/2</span>
+                    {wish.deletionApprovals.length > 0 && (
+                      <span className="text-rose">· Устгах {wish.deletionApprovals.length}/2</span>
+                    )}
                   </div>
                 </div>
-                {wish.author._id === user?.id && (
-                  <button
-                    type="button"
-                    onClick={() => void removeWish(wish._id)}
-                    aria-label="Хүсэл устгах"
-                    title="Хүсэл устгах"
-                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center text-muted transition-colors hover:text-rose"
-                  >
-                    <Trash2 size={17} aria-hidden="true" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => void requestDeletion(wish)}
+                  aria-label={wish.deletionApprovals.includes(user?.id ?? '') ? 'Устгах зөвшөөрөл буцаах' : 'Устгахыг зөвшөөрөх'}
+                  title={wish.deletionApprovals.includes(user?.id ?? '') ? 'Устгах зөвшөөрөл буцаах' : 'Устгахыг зөвшөөрөх'}
+                  className={`flex h-8 w-8 flex-shrink-0 items-center justify-center transition-colors ${
+                    wish.deletionApprovals.includes(user?.id ?? '') ? 'text-rose' : 'text-muted hover:text-rose'
+                  }`}
+                >
+                  <Trash2 size={17} aria-hidden="true" />
+                </button>
               </article>
             ))}
           </div>

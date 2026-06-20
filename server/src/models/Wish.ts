@@ -7,7 +7,8 @@ const wishSchema = new Schema(
     text: { type: String, required: true, trim: true, maxlength: 500 },
     completed: { type: Boolean, default: false },
     completedAt: { type: Date, default: null },
-    completedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    completionApprovals: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    deletionApprovals: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true },
 );

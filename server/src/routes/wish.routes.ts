@@ -15,8 +15,7 @@ wishRouter.get(
   asyncHandler(async (req, res) => {
     const wishes = await Wish.find({ couple: req.coupleId })
       .sort({ completed: 1, createdAt: -1 })
-      .populate('author', 'name avatar')
-      .populate('completedBy', 'name avatar');
+      .populate('author', 'name avatar');
     res.json({ wishes });
   }),
 );
@@ -43,34 +42,47 @@ wishRouter.patch(
       return;
     }
 
-    wish.completed = !wish.completed;
-    wish.completedAt = wish.completed ? new Date() : null;
-    wish.completedBy = wish.completed ? (req.userId as never) : null;
+    const approvalIndex = wish.completionApprovals.findIndex(
+      (userId) => userId.toString() === req.userId,
+    );
+    if (approvalIndex >= 0) wish.completionApprovals.splice(approvalIndex, 1);
+    else wish.completionApprovals.push(req.userId as never);
+
+    const wasCompleted = wish.completed;
+    wish.completed = wish.completionApprovals.length >= 2;
+    if (wish.completed && !wasCompleted) wish.completedAt = new Date();
+    if (!wish.completed) wish.completedAt = null;
     await wish.save();
-    const populated = await wish.populate([
-      { path: 'author', select: 'name avatar' },
-      { path: 'completedBy', select: 'name avatar' },
-    ]);
+    const populated = await wish.populate('author', 'name avatar');
     emitToCouple(req.coupleId!, 'wish:update', populated);
     res.json({ wish: populated });
   }),
 );
 
-wishRouter.delete(
-  '/:id',
+wishRouter.patch(
+  '/:id/delete-approval',
   asyncHandler(async (req, res) => {
     const wish = await Wish.findOne({ _id: req.params.id, couple: req.coupleId });
     if (!wish) {
       res.status(404).json({ error: 'Хүсэл олдсонгүй' });
       return;
     }
-    if (wish.author.toString() !== req.userId) {
-      res.status(403).json({ error: 'Зөвхөн өөрийн нэмсэн хүслийг устгана' });
+    const approvalIndex = wish.deletionApprovals.findIndex(
+      (userId) => userId.toString() === req.userId,
+    );
+    if (approvalIndex >= 0) wish.deletionApprovals.splice(approvalIndex, 1);
+    else wish.deletionApprovals.push(req.userId as never);
+
+    if (wish.deletionApprovals.length >= 2) {
+      await wish.deleteOne();
+      emitToCouple(req.coupleId!, 'wish:deleted', { id: req.params.id });
+      res.json({ deleted: true, id: req.params.id });
       return;
     }
 
-    await wish.deleteOne();
-    emitToCouple(req.coupleId!, 'wish:deleted', { id: req.params.id });
-    res.json({ ok: true });
+    await wish.save();
+    const populated = await wish.populate('author', 'name avatar');
+    emitToCouple(req.coupleId!, 'wish:update', populated);
+    res.json({ deleted: false, wish: populated });
   }),
 );
