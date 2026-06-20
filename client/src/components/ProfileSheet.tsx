@@ -11,6 +11,28 @@ import type { Theme, User } from '../types';
 
 const EMOJI_AVATARS = ['🥰', '😍', '😎', '🦊', '🐰', '🐱', '🐶', '🌸', '🌟', '🍓', '🦄', '👑', '🧸', '🦋'];
 
+function PasswordInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="relative">
+      <input
+        {...props}
+        type={visible ? 'text' : 'password'}
+        className="w-full rounded-xl border border-blush/60 bg-white py-2.5 pl-4 pr-16 text-deep outline-none focus:border-rose"
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((value) => !value)}
+        className="absolute inset-y-0 right-0 px-4 text-xs font-medium text-muted"
+        aria-label={visible ? 'Нууц үг нуух' : 'Нууц үг харуулах'}
+      >
+        {visible ? 'Hide' : 'Show'}
+      </button>
+    </div>
+  );
+}
+
 export default function ProfileSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, refresh } = useAuth();
   const { refresh: refreshCouple } = useCouple();
@@ -22,6 +44,9 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
   const [status, setStatus] = useState('');
   const [theme, setTheme] = useState<Theme>('rose');
   const [busy, setBusy] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Нээгдэх бүрд одоогийн утгуудаар дүүргэнэ.
   useEffect(() => {
@@ -30,6 +55,9 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
       setAvatar(user.avatar);
       setStatus(user.status);
       setTheme(user.theme);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
     }
   }, [open, user]);
 
@@ -79,6 +107,34 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
       onClose();
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Алдаа гарлаа');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast('Шинэ нууц үг хамгийн багадаа 6 тэмдэгт байна');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast('Шинэ нууц үгүүд таарахгүй байна');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await api('/auth/me/password', {
+        method: 'PATCH',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      toast('Нууц үг шинэчлэгдлээ');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Нууц үг шинэчлэхэд алдаа гарлаа');
     } finally {
       setBusy(false);
     }
@@ -176,6 +232,40 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
         >
           {busy ? 'Хадгалж байна…' : 'Хадгалах'}
         </button>
+
+        <form onSubmit={changePassword} className="space-y-3 border-t border-blush/60 pt-4">
+          <div className="text-sm font-semibold text-deep">Нууц үг солих</div>
+          <PasswordInput
+            placeholder="Одоогийн нууц үг"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+          <PasswordInput
+            placeholder="Шинэ нууц үг (6+ тэмдэгт)"
+            autoComplete="new-password"
+            minLength={6}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+          <PasswordInput
+            placeholder="Шинэ нууц үг давтах"
+            autoComplete="new-password"
+            minLength={6}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full rounded-xl border border-rose/50 py-3 font-medium text-rose transition-all active:scale-[0.97] disabled:opacity-60"
+          >
+            {busy ? 'Шинэчилж байна…' : 'Нууц үг шинэчлэх'}
+          </button>
+        </form>
       </div>
     </Sheet>
   );

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCouple } from '../context/CoupleContext';
 import { useToast } from '../components/Toast';
 import Sheet from '../components/Sheet';
+import TimeCapsuleSheet from '../components/TimeCapsuleSheet';
 import { api } from '../lib/api';
 
 interface Feat {
@@ -12,6 +13,7 @@ interface Feat {
   desc: string;
   badge?: string;
   toast: string;
+  action?: 'capsule';
 }
 
 const SECTIONS: { title: string; items: Feat[] }[] = [
@@ -20,7 +22,7 @@ const SECTIONS: { title: string; items: Feat[] }[] = [
     items: [
       { icon: '🫙', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Dream Jar', desc: 'Хамтдаа биелүүлэх хүслийн сан', badge: 'Удахгүй', toast: '🫙 Dream Jar — удахгүй!' },
       { icon: '🎵', color: 'bg-gradient-to-br from-[#e8d4f7] to-[#d4c4f0]', name: 'Song of Us', desc: 'Долоо хоног бүрийн хамтын дуу', toast: '🎵 Song of Us — удахгүй!' },
-      { icon: '🕯️', color: 'bg-gradient-to-br from-[#f7eed4] to-[#f0e0b8]', name: 'Цаг Капсул', desc: 'Ойн өдөрт нээгдэх нууц захидал', badge: 'Удахгүй', toast: '🕯️ Цаг Капсул — дараагийн шатанд нээгдэнэ!' },
+      { icon: '🕯️', color: 'bg-gradient-to-br from-[#f7eed4] to-[#f0e0b8]', name: 'Цаг Капсул', desc: 'Ирээдүйд нээгдэх нууц захидал', toast: '', action: 'capsule' },
     ],
   },
   {
@@ -49,6 +51,16 @@ export default function More() {
   const [newEmail, setNewEmail] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [capsuleOpen, setCapsuleOpen] = useState(false);
+  const [capsuleCount, setCapsuleCount] = useState<number | null>(null);
+
+  function openFeature(feature: Feat) {
+    if (feature.action === 'capsule') {
+      setCapsuleOpen(true);
+      return;
+    }
+    toast(feature.toast);
+  }
 
   function openSheet() {
     setStep(1);
@@ -112,7 +124,7 @@ export default function More() {
             {s.items.map((f) => (
               <button
                 key={f.name}
-                onClick={() => toast(f.toast)}
+                onClick={() => openFeature(f)}
                 className="mb-2.5 flex w-full items-center gap-3.5 rounded-2xl bg-card px-3.5 py-3.5 text-left shadow-[0_2px_14px_rgba(45,31,46,0.07)] transition-transform active:scale-[0.97]"
               >
                 <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-2xl ${f.color}`}>
@@ -122,7 +134,11 @@ export default function More() {
                   <div className="text-[15px] font-semibold text-deep">{f.name}</div>
                   <div className="mt-0.5 text-xs leading-snug text-muted">{f.desc}</div>
                 </div>
-                {f.badge ? (
+                {f.action === 'capsule' && capsuleCount !== null ? (
+                  <span className="rounded-lg bg-rose/10 px-2 py-0.5 text-[10px] font-bold text-rose">
+                    {capsuleCount}
+                  </span>
+                ) : f.badge ? (
                   <span className="rounded-lg bg-purple px-2 py-0.5 text-[10px] font-bold text-white">
                     {f.badge}
                   </span>
@@ -222,6 +238,11 @@ export default function More() {
           </form>
         )}
       </Sheet>
+      <TimeCapsuleSheet
+        open={capsuleOpen}
+        onClose={() => setCapsuleOpen(false)}
+        onCountChange={setCapsuleCount}
+      />
     </>
   );
 }

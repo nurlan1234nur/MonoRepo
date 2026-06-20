@@ -338,6 +338,37 @@ authRouter.patch(
 );
 
 // Профайл зураг байршуулах (multipart, талбар: image) → avatar-д зам хадгална.
+authRouter.patch(
+  '/me/password',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = z
+      .object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(6, 'Шинэ нууц үг хамгийн багадаа 6 тэмдэгт байна'),
+      })
+      .parse(req.body);
+
+    const user = await User.findById(req.userId).select('+passwordHash');
+    if (!user) {
+      res.status(404).json({ error: 'Хэрэглэгч олдсонгүй' });
+      return;
+    }
+    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      res.status(400).json({ error: 'Одоогийн нууц үг буруу байна' });
+      return;
+    }
+    if (await bcrypt.compare(newPassword, user.passwordHash)) {
+      res.status(400).json({ error: 'Шинэ нууц үг одоогийнхоос өөр байх ёстой' });
+      return;
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ ok: true });
+  }),
+);
+
 authRouter.post(
   '/me/avatar',
   requireAuth,
