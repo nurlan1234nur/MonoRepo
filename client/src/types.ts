@@ -121,6 +121,7 @@ export interface WeeklySong {
   title: string;
   artist: string;
   url: string;
+  thumbnailUrl: string;
   selectedBy: Member;
   createdAt: string;
   updatedAt: string;

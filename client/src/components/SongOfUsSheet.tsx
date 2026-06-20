@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ExternalLink, Music2, Pencil, Save } from 'lucide-react';
+import { ExternalLink, Music2, Pencil, Play, Save, Search } from 'lucide-react';
 import Sheet from './Sheet';
 import Avatar from './Avatar';
 import { useToast } from './Toast';
@@ -39,6 +39,9 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [url, setUrl] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [previewing, setPreviewing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -53,6 +56,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
         setTitle('');
         setArtist('');
         setUrl('');
+        setThumbnailUrl('');
       }
       onCurrentChange?.(Boolean(result.current));
     } catch (err) {
@@ -85,7 +89,38 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     setTitle(current?.title ?? '');
     setArtist(current?.artist ?? '');
     setUrl(current?.url ?? '');
+    setThumbnailUrl(current?.thumbnailUrl ?? '');
     setEditing(true);
+  }
+
+  function searchYouTube() {
+    const query = searchQuery.trim();
+    if (!query) return;
+    window.open(
+      `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
+  }
+
+  async function previewYouTube(videoUrl: string) {
+    const value = videoUrl.trim();
+    if (!value || (!value.includes('youtube.com') && !value.includes('youtu.be'))) return;
+    setPreviewing(true);
+    try {
+      const metadata = await api<{ title: string; artist: string; thumbnailUrl: string }>(
+        '/songs/youtube-preview',
+        { method: 'POST', body: JSON.stringify({ url: value }) },
+      );
+      setTitle(metadata.title);
+      setArtist(metadata.artist);
+      setThumbnailUrl(metadata.thumbnailUrl);
+      toast('YouTube мэдээлэл автоматаар орлоо');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'YouTube холбоос уншихад алдаа гарлаа');
+    } finally {
+      setPreviewing(false);
+    }
   }
 
   async function saveSong(e: React.FormEvent) {
@@ -94,7 +129,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     try {
       const result = await api<{ song: WeeklySong }>('/songs/current', {
         method: 'PUT',
-        body: JSON.stringify({ title, artist, url }),
+        body: JSON.stringify({ title, artist, url, thumbnailUrl }),
       });
       setCurrent(result.song);
       setSongs((existing) => [result.song, ...existing.filter((item) => item._id !== result.song._id)]);
@@ -118,6 +153,59 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
         ) : editing ? (
           <form onSubmit={saveSong} className="space-y-3">
             <p className="text-center text-xs text-muted">Энэ долоо хоногийн хамтын дуу</p>
+            <div className="flex gap-2">
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchYouTube();
+                  }
+                }}
+                placeholder="YouTube-ээс дуу хайх"
+                className="min-w-0 flex-1 rounded-xl border border-blush/60 bg-white px-4 py-3 text-sm text-deep outline-none focus:border-rose"
+              />
+              <button
+                type="button"
+                onClick={searchYouTube}
+                disabled={!searchQuery.trim()}
+                aria-label="YouTube хайх"
+                title="YouTube хайх"
+                className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[#ff0033] text-white disabled:opacity-45"
+              >
+                <Search size={20} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="relative">
+              <Play
+                size={18}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#ff0033]"
+                aria-hidden="true"
+              />
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onBlur={(e) => void previewYouTube(e.target.value)}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData('text');
+                  window.setTimeout(() => void previewYouTube(pasted), 0);
+                }}
+                maxLength={1000}
+                placeholder="YouTube Share link paste хийх"
+                required
+                className="w-full rounded-xl border border-blush/60 bg-white py-3 pl-11 pr-4 text-sm text-deep outline-none focus:border-rose"
+              />
+            </div>
+            {previewing && <p className="text-center text-xs text-muted">YouTube мэдээлэл уншиж байна…</p>}
+            {thumbnailUrl && (
+              <img
+                src={thumbnailUrl}
+                alt=""
+                className="aspect-video w-full rounded-xl object-cover"
+              />
+            )}
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -131,15 +219,6 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
               onChange={(e) => setArtist(e.target.value)}
               maxLength={120}
               placeholder="Уран бүтээлч"
-              required
-              className="w-full rounded-xl border border-blush/60 bg-white px-4 py-3 text-sm text-deep outline-none focus:border-rose"
-            />
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              maxLength={1000}
-              placeholder="Spotify эсвэл YouTube холбоос"
               required
               className="w-full rounded-xl border border-blush/60 bg-white px-4 py-3 text-sm text-deep outline-none focus:border-rose"
             />
@@ -165,7 +244,11 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
           </form>
         ) : current ? (
           <div>
-            <section className="mb-5 rounded-2xl bg-deep px-5 py-5 text-white shadow-lg">
+            <section className="mb-5 overflow-hidden rounded-2xl bg-deep text-white shadow-lg">
+              {current.thumbnailUrl && (
+                <img src={current.thumbnailUrl} alt="" className="aspect-video w-full object-cover" />
+              )}
+              <div className="p-5">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-blush">
                   <Music2 size={23} aria-hidden="true" />
@@ -195,6 +278,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
                 {providerLabel(current.url)}
                 <ExternalLink size={16} aria-hidden="true" />
               </a>
+              </div>
             </section>
 
             {history.length > 0 && (
@@ -209,9 +293,13 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
                       rel="noreferrer"
                       className="flex items-center gap-3 py-3.5"
                     >
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
-                        <Music2 size={18} aria-hidden="true" />
-                      </div>
+                      {song.thumbnailUrl ? (
+                        <img src={song.thumbnailUrl} alt="" className="h-10 w-14 flex-shrink-0 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+                          <Music2 size={18} aria-hidden="true" />
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium text-deep">{song.title}</div>
                         <div className="truncate text-xs text-muted">{song.artist} · {weekLabel(song.weekStart)}</div>

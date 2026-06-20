@@ -32,6 +32,46 @@ songRouter.get(
   }),
 );
 
+const previewSchema = z.object({ url: z.string().trim().url().max(1000) });
+const youtubeHosts = new Set([
+  'youtube.com',
+  'www.youtube.com',
+  'm.youtube.com',
+  'music.youtube.com',
+  'youtu.be',
+]);
+
+songRouter.post(
+  '/youtube-preview',
+  asyncHandler(async (req, res) => {
+    const { url } = previewSchema.parse(req.body);
+    const parsed = new URL(url);
+    if (!youtubeHosts.has(parsed.hostname.toLowerCase())) {
+      res.status(400).json({ error: 'YouTube холбоос оруулна уу' });
+      return;
+    }
+
+    const response = await fetch(
+      `https://www.youtube.com/oembed?url=${encodeURIComponent(parsed.toString())}&format=json`,
+      { signal: AbortSignal.timeout(8000) },
+    );
+    if (!response.ok) {
+      res.status(400).json({ error: 'YouTube видео олдсонгүй' });
+      return;
+    }
+    const metadata = (await response.json()) as {
+      title?: string;
+      author_name?: string;
+      thumbnail_url?: string;
+    };
+    res.json({
+      title: metadata.title ?? '',
+      artist: metadata.author_name ?? '',
+      thumbnailUrl: metadata.thumbnail_url ?? '',
+    });
+  }),
+);
+
 const songSchema = z.object({
   title: z.string().trim().min(1).max(150),
   artist: z.string().trim().min(1).max(120),
@@ -41,6 +81,7 @@ const songSchema = z.object({
     .url('Дууны холбоос буруу байна')
     .max(1000)
     .refine((value) => value.startsWith('https://') || value.startsWith('http://'), 'HTTP холбоос оруулна уу'),
+  thumbnailUrl: z.string().trim().url().max(1000).or(z.literal('')).optional(),
 });
 
 songRouter.put(
