@@ -1,5 +1,6 @@
 // Backend API client. Token-ийг localStorage-д хадгална.
 const TOKEN_KEY = 'nous-token';
+const API_ORIGIN = import.meta.env.VITE_API_ORIGIN?.replace(/\/$/, '') ?? '';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -15,7 +16,7 @@ export function clearToken(): void {
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_ORIGIN}/api${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -34,7 +35,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 // Multipart (зураг) upload. Content-Type-ийг browser өөрөө boundary-тэй тавина.
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   const token = getToken();
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_ORIGIN}/api${path}`, {
     method: 'POST',
     body: form,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
