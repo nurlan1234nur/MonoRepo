@@ -9,6 +9,7 @@ const userSchema = new Schema(
     name: { type: String, required: true, trim: true },
     // Emoji (жнь '💛') эсвэл байршуулсан зургийн зам (/uploads/...).
     avatar: { type: String, default: '💛' },
+    avatarPublicId: { type: String, default: '' },
     // Богино статус/тухай мөр (профайлд харагдана).
     status: { type: String, default: '', trim: true },
     // Аппын өнгөний загвар (rose | sunset | ocean | violet | forest).

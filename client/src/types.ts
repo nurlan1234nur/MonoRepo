@@ -103,3 +103,13 @@ export interface Capsule {
   unlocked: boolean;
   text: string | null;
 }
+
+export interface Wish {
+  _id: string;
+  author: Member;
+  text: string;
+  completed: boolean;
+  completedAt: string | null;
+  completedBy: Member | null;
+  createdAt: string;
+}

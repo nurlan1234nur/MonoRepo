@@ -6,7 +6,7 @@ import { OtpCode } from '../models/OtpCode.js';
 import { signToken } from '../utils/jwt.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
-import { upload } from '../config/uploads.js';
+import { deleteStoredImage, storeUploadedImage, upload } from '../config/uploads.js';
 import { sendOtpEmail } from '../utils/mailer.js';
 import { todayStr } from '../data/questions.js';
 
@@ -378,15 +378,23 @@ authRouter.post(
       res.status(400).json({ error: 'Зураг шаардлагатай' });
       return;
     }
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { avatar: `/uploads/${req.file.filename}` },
-      { new: true },
-    );
+    const user = await User.findById(req.userId);
     if (!user) {
       res.status(404).json({ error: 'Хэрэглэгч олдсонгүй' });
       return;
     }
+    const previousAvatar = user.avatar;
+    const previousPublicId = user.avatarPublicId;
+    const image = await storeUploadedImage(req.file);
+    user.avatar = image.url;
+    user.avatarPublicId = image.publicId;
+    try {
+      await user.save();
+    } catch (error) {
+      await deleteStoredImage(image.publicId, image.url).catch(() => {});
+      throw error;
+    }
+    await deleteStoredImage(previousPublicId, previousAvatar).catch(() => {});
     res.json({ user: userPayload(user) });
   }),
 );

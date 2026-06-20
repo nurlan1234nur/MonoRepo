@@ -6,6 +6,7 @@ const messageSchema = new Schema(
     sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     text: { type: String, default: '', trim: true, maxlength: 4000 },
     imageUrl: { type: String, default: '' }, // зураг илгээсэн бол
+    imagePublicId: { type: String, default: '' },
     deleted: { type: Boolean, default: false }, // татаж авсан бол ("X зурвасаа татлаа")
     special: { type: Boolean, default: false },
   },

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
+import PasswordInput from '../components/PasswordInput';
 import { api } from '../lib/api';
 
 type Screen = 'login' | 'register' | 'forgot' | 'done';
@@ -19,28 +20,6 @@ function Field(props: React.InputHTMLAttributes<HTMLInputElement>) {
       {...props}
       className="w-full rounded-xl border border-blush/60 bg-white/70 px-4 py-3 text-deep outline-none transition-colors focus:border-rose"
     />
-  );
-}
-
-function PasswordField(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <div className="relative">
-      <input
-        {...props}
-        type={visible ? 'text' : 'password'}
-        className="w-full rounded-xl border border-blush/60 bg-white/70 py-3 pl-4 pr-16 text-deep outline-none transition-colors focus:border-rose"
-      />
-      <button
-        type="button"
-        onClick={() => setVisible((value) => !value)}
-        className="absolute inset-y-0 right-0 px-4 text-xs font-medium text-muted"
-        aria-label={visible ? 'Нууц үг нуух' : 'Нууц үг харуулах'}
-      >
-        {visible ? 'Hide' : 'Show'}
-      </button>
-    </div>
   );
 }
 
@@ -208,7 +187,7 @@ export default function AuthPage() {
               onChange={(e) => setLoginUser(e.target.value)}
               required
             />
-            <PasswordField
+            <PasswordInput
               placeholder="Нууц үг"
               value={loginPass}
               onChange={(e) => setLoginPass(e.target.value)}
@@ -261,7 +240,7 @@ export default function AuthPage() {
               onChange={(e) => setRegUser(e.target.value)}
               required
             />
-            <PasswordField
+            <PasswordInput
               placeholder="Нууц үг (6+ тэмдэгт)"
               value={regPass}
               onChange={(e) => setRegPass(e.target.value)}
@@ -319,7 +298,7 @@ export default function AuthPage() {
               <span className="font-medium text-deep">{fgSentTo}</span> руу илгээсэн кодыг оруулна уу.
             </p>
             <CodeField placeholder="••••••" value={fgCode} onChange={(e) => setFgCode(e.target.value.replace(/\D/g, ''))} required />
-            <PasswordField
+            <PasswordInput
               placeholder="Шинэ нууц үг (6+ тэмдэгт)"
               value={fgPass}
               onChange={(e) => setFgPass(e.target.value)}

@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCouple } from '../context/CoupleContext';
 import { useToast } from '../components/Toast';
 import Sheet from '../components/Sheet';
 import TimeCapsuleSheet from '../components/TimeCapsuleSheet';
+import DreamJarSheet from '../components/DreamJarSheet';
+import PasswordInput from '../components/PasswordInput';
 import { api } from '../lib/api';
 
 interface Feat {
@@ -13,14 +16,14 @@ interface Feat {
   desc: string;
   badge?: string;
   toast: string;
-  action?: 'capsule';
+  action?: 'capsule' | 'dream-jar';
 }
 
 const SECTIONS: { title: string; items: Feat[] }[] = [
   {
     title: '🌟 Тусгай зүйлс',
     items: [
-      { icon: '🫙', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Dream Jar', desc: 'Хамтдаа биелүүлэх хүслийн сан', badge: 'Удахгүй', toast: '🫙 Dream Jar — удахгүй!' },
+      { icon: '🫙', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Dream Jar', desc: 'Хамтдаа биелүүлэх хүслийн сан', toast: '', action: 'dream-jar' },
       { icon: '🎵', color: 'bg-gradient-to-br from-[#e8d4f7] to-[#d4c4f0]', name: 'Song of Us', desc: 'Долоо хоног бүрийн хамтын дуу', toast: '🎵 Song of Us — удахгүй!' },
       { icon: '🕯️', color: 'bg-gradient-to-br from-[#f7eed4] to-[#f0e0b8]', name: 'Цаг Капсул', desc: 'Ирээдүйд нээгдэх нууц захидал', toast: '', action: 'capsule' },
     ],
@@ -53,8 +56,19 @@ export default function More() {
   const [busy, setBusy] = useState(false);
   const [capsuleOpen, setCapsuleOpen] = useState(false);
   const [capsuleCount, setCapsuleCount] = useState<number | null>(null);
+  const [dreamJarOpen, setDreamJarOpen] = useState(false);
+  const [wishCount, setWishCount] = useState<number | null>(null);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordBusy, setPasswordBusy] = useState(false);
 
   function openFeature(feature: Feat) {
+    if (feature.action === 'dream-jar') {
+      setDreamJarOpen(true);
+      return;
+    }
     if (feature.action === 'capsule') {
       setCapsuleOpen(true);
       return;
@@ -67,6 +81,13 @@ export default function More() {
     setNewEmail('');
     setCode('');
     setSheetOpen(true);
+  }
+
+  function openPasswordSheet() {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordOpen(true);
   }
 
   async function requestCode(e: React.FormEvent) {
@@ -108,11 +129,39 @@ export default function More() {
     }
   }
 
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast('Шинэ нууц үг хамгийн багадаа 6 тэмдэгт байна');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast('Шинэ нууц үгүүд таарахгүй байна');
+      return;
+    }
+
+    setPasswordBusy(true);
+    try {
+      await api('/auth/me/password', {
+        method: 'PATCH',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      setPasswordOpen(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      toast('Нууц үг шинэчлэгдлээ');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Нууц үг шинэчлэхэд алдаа гарлаа');
+    } finally {
+      setPasswordBusy(false);
+    }
+  }
+
   return (
     <>
       <header className="flex-shrink-0 px-6 pt-3">
         <div className="text-2xl font-bold text-deep">Илүү…</div>
-        <div className="mt-0.5 text-[13px] text-muted">Тусгай feature-ууд</div>
       </header>
 
       <div className="no-scrollbar flex-1 overflow-y-auto px-4 pb-[90px] pt-3.5">
@@ -134,7 +183,11 @@ export default function More() {
                   <div className="text-[15px] font-semibold text-deep">{f.name}</div>
                   <div className="mt-0.5 text-xs leading-snug text-muted">{f.desc}</div>
                 </div>
-                {f.action === 'capsule' && capsuleCount !== null ? (
+                {f.action === 'dream-jar' && wishCount !== null ? (
+                  <span className="rounded-lg bg-rose/10 px-2 py-0.5 text-[10px] font-bold text-rose">
+                    {wishCount}
+                  </span>
+                ) : f.action === 'capsule' && capsuleCount !== null ? (
                   <span className="rounded-lg bg-rose/10 px-2 py-0.5 text-[10px] font-bold text-rose">
                     {capsuleCount}
                   </span>
@@ -171,6 +224,21 @@ export default function More() {
                 className="rounded-lg bg-rose/10 px-3 py-1.5 text-xs font-bold text-rose transition-transform active:scale-95"
               >
                 {user?.recoveryEmail ? 'Солих' : 'Холбох'}
+              </button>
+            </div>
+            <div className="mt-3 flex items-center gap-3.5 border-t border-blush/60 pt-3">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+                <KeyRound size={22} aria-hidden="true" />
+              </div>
+              <div className="flex-1">
+                <div className="text-[15px] font-semibold text-deep">Нууц үг</div>
+                <div className="mt-0.5 text-xs leading-snug text-muted">Нэвтрэх нууц үгээ шинэчлэх</div>
+              </div>
+              <button
+                onClick={openPasswordSheet}
+                className="rounded-lg bg-rose/10 px-3 py-1.5 text-xs font-bold text-rose transition-transform active:scale-95"
+              >
+                Солих
               </button>
             </div>
           </div>
@@ -238,10 +306,49 @@ export default function More() {
           </form>
         )}
       </Sheet>
+      <Sheet open={passwordOpen} onClose={() => setPasswordOpen(false)} title="Нууц үг солих">
+        <form onSubmit={changePassword} className="space-y-3">
+          <PasswordInput
+            placeholder="Одоогийн нууц үг"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+          <PasswordInput
+            placeholder="Шинэ нууц үг (6+ тэмдэгт)"
+            autoComplete="new-password"
+            minLength={6}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+          <PasswordInput
+            placeholder="Шинэ нууц үг давтах"
+            autoComplete="new-password"
+            minLength={6}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+          <button
+            type="submit"
+            disabled={passwordBusy}
+            className="w-full rounded-xl bg-rose py-3 font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
+          >
+            {passwordBusy ? 'Шинэчилж байна…' : 'Нууц үг шинэчлэх'}
+          </button>
+        </form>
+      </Sheet>
       <TimeCapsuleSheet
         open={capsuleOpen}
         onClose={() => setCapsuleOpen(false)}
         onCountChange={setCapsuleCount}
+      />
+      <DreamJarSheet
+        open={dreamJarOpen}
+        onClose={() => setDreamJarOpen(false)}
+        onCountChange={setWishCount}
       />
     </>
   );

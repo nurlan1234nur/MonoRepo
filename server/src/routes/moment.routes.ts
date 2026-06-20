@@ -4,9 +4,7 @@ import { Moment } from '../models/Moment.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireCouple } from '../middleware/couple.js';
-import path from 'node:path';
-import fs from 'node:fs';
-import { upload, uploadsDir } from '../config/uploads.js';
+import { deleteStoredImage, storeUploadedImage, upload } from '../config/uploads.js';
 import { emitToCouple } from '../realtime/socket.js';
 
 export const momentRouter = Router();
@@ -34,12 +32,17 @@ momentRouter.post(
       return;
     }
     const caption = typeof req.body.caption === 'string' ? req.body.caption.slice(0, 500) : '';
+    const image = await storeUploadedImage(req.file);
     const moment = await Moment.create({
-      couple: req.coupleId,
-      author: req.userId,
-      imageUrl: `/uploads/${req.file.filename}`,
-      caption,
-    });
+        couple: req.coupleId,
+        author: req.userId,
+        imageUrl: image.url,
+        imagePublicId: image.publicId,
+        caption,
+      }).catch(async (error) => {
+      await deleteStoredImage(image.publicId, image.url).catch(() => {});
+      throw error;
+      });
     const populated = await moment.populate('author', 'name avatar');
 
     emitToCouple(req.coupleId!, 'moment:new', populated);
@@ -62,9 +65,7 @@ momentRouter.delete(
       return;
     }
     await moment.deleteOne();
-    // Диск дээрх зургийн файлыг устгана.
-    const file = path.join(uploadsDir, path.basename(moment.imageUrl));
-    fs.promises.unlink(file).catch(() => {});
+    await deleteStoredImage(moment.imagePublicId, moment.imageUrl).catch(() => {});
 
     emitToCouple(req.coupleId!, 'moment:deleted', { id: req.params.id });
     res.json({ ok: true });

@@ -11,6 +11,7 @@ import { capsuleRouter } from './routes/capsule.routes.js';
 import { momentRouter } from './routes/moment.routes.js';
 import { milestoneRouter } from './routes/milestone.routes.js';
 import { dailyRouter } from './routes/daily.routes.js';
+import { wishRouter } from './routes/wish.routes.js';
 import { notFound, errorHandler } from './middleware/error.js';
 import { initSocket } from './realtime/socket.js';
 import { uploadsDir } from './config/uploads.js';
@@ -40,6 +41,7 @@ app.use('/api/capsules', capsuleRouter);
 app.use('/api/moments', momentRouter);
 app.use('/api/milestones', milestoneRouter);
 app.use('/api/daily', dailyRouter);
+app.use('/api/wishes', wishRouter);
 
 app.use(notFound);
 app.use(errorHandler);

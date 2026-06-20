@@ -5,7 +5,7 @@ import { User } from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireCouple } from '../middleware/couple.js';
-import { upload } from '../config/uploads.js';
+import { deleteStoredImage, storeUploadedImage, upload } from '../config/uploads.js';
 import { emitToCouple } from '../realtime/socket.js';
 
 export const messageRouter = Router();
@@ -58,12 +58,17 @@ messageRouter.post(
       return;
     }
     const text = typeof req.body.caption === 'string' ? req.body.caption.slice(0, 500) : '';
+    const image = await storeUploadedImage(req.file);
     const message = await Message.create({
-      couple: req.coupleId,
-      sender: req.userId,
-      text,
-      imageUrl: `/uploads/${req.file.filename}`,
-    });
+        couple: req.coupleId,
+        sender: req.userId,
+        text,
+        imageUrl: image.url,
+        imagePublicId: image.publicId,
+      }).catch(async (error) => {
+      await deleteStoredImage(image.publicId, image.url).catch(() => {});
+      throw error;
+      });
     const populated = await message.populate('sender', 'name avatar');
     emitToCouple(req.coupleId!, 'message:new', populated);
     res.status(201).json({ message: populated });
@@ -74,7 +79,12 @@ messageRouter.post(
 messageRouter.delete(
   '/',
   asyncHandler(async (req, res) => {
+    const images = await Message.find({
+      couple: req.coupleId,
+      imageUrl: { $ne: '' },
+    }).select('imageUrl imagePublicId');
     await Message.deleteMany({ couple: req.coupleId });
+    await Promise.allSettled(images.map((image) => deleteStoredImage(image.imagePublicId, image.imageUrl)));
     emitToCouple(req.coupleId!, 'messages:cleared', { by: req.userId });
     res.json({ ok: true });
   }),
@@ -94,9 +104,13 @@ messageRouter.delete(
       return;
     }
     message.deleted = true;
+    const imageUrl = message.imageUrl;
+    const imagePublicId = message.imagePublicId;
     message.text = '';
     message.imageUrl = '';
+    message.imagePublicId = '';
     await message.save();
+    await deleteStoredImage(imagePublicId, imageUrl).catch(() => {});
     const populated = await message.populate('sender', 'name avatar');
     emitToCouple(req.coupleId!, 'message:update', populated);
     res.json({ message: populated });
