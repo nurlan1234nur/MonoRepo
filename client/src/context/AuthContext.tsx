@@ -2,13 +2,14 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { api, setToken, clearToken, getToken } from '../lib/api';
 import { disconnectSocket } from '../lib/socket';
 import { applyTheme } from '../lib/theme';
+import { disableNotifications } from '../lib/notifications';
 import type { User } from '../types';
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -53,7 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user);
   }
 
-  function logout() {
+  async function logout() {
+    await disableNotifications().catch(() => {});
     clearToken();
     disconnectSocket();
     setUser(null);

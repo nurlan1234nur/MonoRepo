@@ -135,3 +135,48 @@ export interface LoveNote {
   openedAt: string | null;
   createdAt: string;
 }
+
+export interface GameAnswer {
+  userId: string;
+  selectedUserIds: string[];
+}
+
+export interface GameRound {
+  id: string;
+  roundNumber: number;
+  question: string;
+  answerCount: number;
+  revealed: boolean;
+  matched: boolean | null;
+  answers: GameAnswer[];
+  myChoice: 'self' | 'partner' | 'both' | null;
+  memberIds: string[];
+}
+
+export interface GameStats {
+  matches: number;
+  total: number;
+}
+
+export interface BattleshipShot {
+  x: number;
+  y: number;
+  result: 'hit' | 'miss' | 'sunk';
+  sunkShip?: string;
+}
+
+export interface BattleshipGame {
+  id: string;
+  status: 'placement' | 'playing' | 'finished';
+  turnUserId: string | null;
+  winnerUserId: string | null;
+  me: {
+    ready: boolean;
+    ships: Array<{ type: string; cells: Array<{ x: number; y: number }> }>;
+    incomingShots: BattleshipShot[];
+  };
+  opponent: {
+    ready: boolean;
+    shots: BattleshipShot[];
+  };
+}

@@ -15,6 +15,8 @@ import { wishRouter } from './routes/wish.routes.js';
 import { songRouter } from './routes/song.routes.js';
 import { notificationRouter } from './routes/notification.routes.js';
 import { loveNoteRouter } from './routes/loveNote.routes.js';
+import { gameRouter } from './routes/game.routes.js';
+import { battleshipRouter } from './routes/battleship.routes.js';
 import { notFound, errorHandler } from './middleware/error.js';
 import { initSocket } from './realtime/socket.js';
 import { uploadsDir } from './config/uploads.js';
@@ -48,6 +50,8 @@ app.use('/api/wishes', wishRouter);
 app.use('/api/songs', songRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/love-notes', loveNoteRouter);
+app.use('/api/games', gameRouter);
+app.use('/api/battleship', battleshipRouter);
 
 app.use(notFound);
 app.use(errorHandler);

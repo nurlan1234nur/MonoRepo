@@ -8,6 +8,8 @@ import TimeCapsuleSheet from '../components/TimeCapsuleSheet';
 import DreamJarSheet from '../components/DreamJarSheet';
 import SongOfUsSheet from '../components/SongOfUsSheet';
 import LoveNotesSheet from '../components/LoveNotesSheet';
+import CoupleGameSheet from '../components/CoupleGameSheet';
+import BattleshipSheet from '../components/BattleshipSheet';
 import PasswordInput from '../components/PasswordInput';
 import { api } from '../lib/api';
 import {
@@ -24,7 +26,7 @@ interface Feat {
   desc: string;
   badge?: string;
   toast: string;
-  action?: 'capsule' | 'dream-jar' | 'song-of-us' | 'love-notes';
+  action?: 'capsule' | 'dream-jar' | 'song-of-us' | 'love-notes' | 'couple-game';
 }
 
 const SECTIONS: { title: string; items: Feat[] }[] = [
@@ -45,7 +47,7 @@ const SECTIONS: { title: string; items: Feat[] }[] = [
   {
     title: '🎮 Хоёулаа',
     items: [
-      { icon: '🎮', color: 'bg-gradient-to-br from-[#d4e8f7] to-[#c4d8f0]', name: 'Хосуудын тоглоом', desc: 'Quiz, санах ой, нэр таах тоглоомууд', badge: 'Шинэ', toast: '🎮 Тоглоомууд — удахгүй!' },
+      { icon: '🎮', color: 'bg-gradient-to-br from-[#d4e8f7] to-[#c4d8f0]', name: 'Хосуудын тоглоом', desc: 'Хоёулаа хариулж, бодлоо тааруулах', badge: 'Шинэ', toast: '', action: 'couple-game' },
       { icon: '📝', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Love Notes', desc: 'Нуугдсан тэмдэглэл үлдээх', toast: '', action: 'love-notes' },
       { icon: '🔔', color: 'bg-gradient-to-br from-[#d4f7d4] to-[#c4f0c4]', name: 'Ойн сануулга', desc: 'Чухал өдрүүдийн автомат сануулга', toast: '🔔 Сануулга — удахгүй!' },
     ],
@@ -70,6 +72,9 @@ export default function More() {
   const [hasCurrentSong, setHasCurrentSong] = useState(false);
   const [loveNotesOpen, setLoveNotesOpen] = useState(false);
   const [unreadLoveNotes, setUnreadLoveNotes] = useState(0);
+  const [gameOpen, setGameOpen] = useState(false);
+  const [gameMenuOpen, setGameMenuOpen] = useState(false);
+  const [battleshipOpen, setBattleshipOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -79,6 +84,10 @@ export default function More() {
   const [notificationBusy, setNotificationBusy] = useState(false);
 
   function openFeature(feature: Feat) {
+    if (feature.action === 'couple-game') {
+      setGameMenuOpen(true);
+      return;
+    }
     if (feature.action === 'love-notes') {
       setLoveNotesOpen(true);
       return;
@@ -434,6 +443,40 @@ export default function More() {
         onClose={() => setLoveNotesOpen(false)}
         onUnreadChange={setUnreadLoveNotes}
       />
+      <CoupleGameSheet open={gameOpen} onClose={() => setGameOpen(false)} />
+      <BattleshipSheet open={battleshipOpen} onClose={() => setBattleshipOpen(false)} />
+      <Sheet open={gameMenuOpen} onClose={() => setGameMenuOpen(false)} title="Хосуудын тоглоом">
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => {
+              setGameMenuOpen(false);
+              setGameOpen(true);
+            }}
+            className="flex w-full items-center gap-3.5 rounded-xl bg-white px-4 py-3.5 text-left shadow-sm"
+          >
+            <span className="text-2xl">💭</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-deep">Хэн нь илүү?</span>
+              <span className="mt-0.5 block text-xs text-muted">Хариултаа нууж, бодлоо тааруулах</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setGameMenuOpen(false);
+              setBattleshipOpen(true);
+            }}
+            className="flex w-full items-center gap-3.5 rounded-xl bg-white px-4 py-3.5 text-left shadow-sm"
+          >
+            <span className="text-2xl">🚢</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-deep">Онгоц буудах</span>
+              <span className="mt-0.5 block text-xs text-muted">10×10 талбай дээр ээлжээр буудах</span>
+            </span>
+          </button>
+        </div>
+      </Sheet>
     </>
   );
 }
