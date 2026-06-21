@@ -1,5 +1,5 @@
 // nous PWA service worker
-const CACHE = 'nous-v1';
+const CACHE = 'nous-v2';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -60,5 +60,41 @@ self.addEventListener('fetch', (event) => {
           return res;
         }),
     ),
+  );
+});
+
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {};
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const chatIsVisible = clients.some((client) => {
+        const url = new URL(client.url);
+        return client.visibilityState === 'visible' && url.pathname === '/chat';
+      });
+      if (chatIsVisible) return;
+      return self.registration.showNotification(data.title ?? 'nous', {
+        body: data.body ?? 'Шинэ зурвас ирлээ',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: data.tag ?? 'nous-message',
+        renotify: true,
+        data: { url: data.url ?? '/chat' },
+      });
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url ?? '/chat', self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clients) => {
+      const existing = clients.find((client) => new URL(client.url).origin === self.location.origin);
+      if (existing) {
+        await existing.navigate(targetUrl);
+        return existing.focus();
+      }
+      return self.clients.openWindow(targetUrl);
+    }),
   );
 });

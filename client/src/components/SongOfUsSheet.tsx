@@ -31,6 +31,27 @@ function providerLabel(url: string): string {
   return 'Дууг нээх';
 }
 
+function youtubeVideoId(url: string): string | null {
+  function valid(candidate: string | null | undefined): string | null {
+    return candidate && /^[A-Za-z0-9_-]{6,20}$/.test(candidate) ? candidate : null;
+  }
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    if (host === 'youtu.be') return valid(parsed.pathname.split('/').filter(Boolean)[0]);
+    if (!host.endsWith('youtube.com')) return null;
+    if (parsed.pathname === '/watch') return valid(parsed.searchParams.get('v'));
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    if (parts[0] === 'shorts' || parts[0] === 'embed' || parts[0] === 'live') {
+      return valid(parts[1]);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props) {
   const toast = useToast();
   const [current, setCurrent] = useState<WeeklySong | null>(null);
@@ -144,6 +165,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
   }
 
   const history = current ? songs.filter((song) => song._id !== current._id) : songs;
+  const currentYouTubeId = current ? youtubeVideoId(current.url) : null;
 
   return (
     <Sheet open={open} onClose={onClose} title="Song of Us">
@@ -245,9 +267,18 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
         ) : current ? (
           <div>
             <section className="mb-5 overflow-hidden rounded-2xl bg-deep text-white shadow-lg">
-              {current.thumbnailUrl && (
+              {currentYouTubeId ? (
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${currentYouTubeId}?rel=0`}
+                  title={`${current.title} — ${current.artist}`}
+                  className="aspect-video w-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              ) : current.thumbnailUrl ? (
                 <img src={current.thumbnailUrl} alt="" className="aspect-video w-full object-cover" />
-              )}
+              ) : null}
               <div className="p-5">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-blush">

@@ -11,6 +11,8 @@ import { DailyAnswer } from './models/DailyAnswer.js';
 import { Moment } from './models/Moment.js';
 import { Wish } from './models/Wish.js';
 import { WeeklySong } from './models/WeeklySong.js';
+import { WebPushSubscription } from './models/WebPushSubscription.js';
+import { LoveNote } from './models/LoveNote.js';
 import { questionIndexForDate, todayStr } from './data/questions.js';
 
 // 2 хос (4 хэрэглэгч) + жишээ мессеж/mood/капсул үүсгэдэг test seed.
@@ -35,6 +37,8 @@ async function seed(): Promise<void> {
     Moment.deleteMany({}),
     Wish.deleteMany({}),
     WeeklySong.deleteMany({}),
+    WebPushSubscription.deleteMany({}),
+    LoveNote.deleteMany({}),
   ]);
   console.log('✓ Хуучин өгөгдлийг цэвэрлэлээ');
 

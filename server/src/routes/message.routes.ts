@@ -7,6 +7,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { requireCouple } from '../middleware/couple.js';
 import { deleteStoredImage, storeUploadedImage, upload } from '../config/uploads.js';
 import { emitToCouple } from '../realtime/socket.js';
+import { sendMessagePush } from '../utils/push.js';
 
 export const messageRouter = Router();
 
@@ -43,6 +44,7 @@ messageRouter.post(
 
     // Хосын нөгөө гишүүнд real-time дамжуулна.
     emitToCouple(req.coupleId!, 'message:new', populated);
+    void sendMessagePush(req.coupleId!, req.userId!, text).catch(() => {});
 
     res.status(201).json({ message: populated });
   }),
@@ -71,6 +73,7 @@ messageRouter.post(
       });
     const populated = await message.populate('sender', 'name avatar');
     emitToCouple(req.coupleId!, 'message:new', populated);
+    void sendMessagePush(req.coupleId!, req.userId!, text, true).catch(() => {});
     res.status(201).json({ message: populated });
   }),
 );

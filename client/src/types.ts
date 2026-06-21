@@ -126,3 +126,12 @@ export interface WeeklySong {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface LoveNote {
+  _id: string;
+  author: Member;
+  recipient: Member;
+  text: string | null;
+  openedAt: string | null;
+  createdAt: string;
+}

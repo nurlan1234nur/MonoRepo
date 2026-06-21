@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyRound } from 'lucide-react';
+import { Bell, BellOff, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCouple } from '../context/CoupleContext';
 import { useToast } from '../components/Toast';
@@ -7,8 +7,15 @@ import Sheet from '../components/Sheet';
 import TimeCapsuleSheet from '../components/TimeCapsuleSheet';
 import DreamJarSheet from '../components/DreamJarSheet';
 import SongOfUsSheet from '../components/SongOfUsSheet';
+import LoveNotesSheet from '../components/LoveNotesSheet';
 import PasswordInput from '../components/PasswordInput';
 import { api } from '../lib/api';
+import {
+  disableNotifications,
+  enableNotifications,
+  notificationStatus,
+  type NotificationStatus,
+} from '../lib/notifications';
 
 interface Feat {
   icon: string;
@@ -17,7 +24,7 @@ interface Feat {
   desc: string;
   badge?: string;
   toast: string;
-  action?: 'capsule' | 'dream-jar' | 'song-of-us';
+  action?: 'capsule' | 'dream-jar' | 'song-of-us' | 'love-notes';
 }
 
 const SECTIONS: { title: string; items: Feat[] }[] = [
@@ -39,7 +46,7 @@ const SECTIONS: { title: string; items: Feat[] }[] = [
     title: '🎮 Хоёулаа',
     items: [
       { icon: '🎮', color: 'bg-gradient-to-br from-[#d4e8f7] to-[#c4d8f0]', name: 'Хосуудын тоглоом', desc: 'Quiz, санах ой, нэр таах тоглоомууд', badge: 'Шинэ', toast: '🎮 Тоглоомууд — удахгүй!' },
-      { icon: '📝', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Love Notes', desc: 'Нуугдсан тэмдэглэл үлдээх', toast: '📝 Love Notes — удахгүй!' },
+      { icon: '📝', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Love Notes', desc: 'Нуугдсан тэмдэглэл үлдээх', toast: '', action: 'love-notes' },
       { icon: '🔔', color: 'bg-gradient-to-br from-[#d4f7d4] to-[#c4f0c4]', name: 'Ойн сануулга', desc: 'Чухал өдрүүдийн автомат сануулга', toast: '🔔 Сануулга — удахгүй!' },
     ],
   },
@@ -61,13 +68,21 @@ export default function More() {
   const [wishCount, setWishCount] = useState<number | null>(null);
   const [songOpen, setSongOpen] = useState(false);
   const [hasCurrentSong, setHasCurrentSong] = useState(false);
+  const [loveNotesOpen, setLoveNotesOpen] = useState(false);
+  const [unreadLoveNotes, setUnreadLoveNotes] = useState(0);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordBusy, setPasswordBusy] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationStatus>(notificationStatus);
+  const [notificationBusy, setNotificationBusy] = useState(false);
 
   function openFeature(feature: Feat) {
+    if (feature.action === 'love-notes') {
+      setLoveNotesOpen(true);
+      return;
+    }
     if (feature.action === 'song-of-us') {
       setSongOpen(true);
       return;
@@ -165,6 +180,26 @@ export default function More() {
     }
   }
 
+  async function toggleNotifications() {
+    setNotificationBusy(true);
+    try {
+      if (notifications === 'granted') {
+        await disableNotifications();
+        setNotifications('default');
+        toast('Chat notification унтарлаа');
+      } else {
+        await enableNotifications();
+        setNotifications('granted');
+        toast('Chat notification аслаа');
+      }
+    } catch (err) {
+      setNotifications(notificationStatus());
+      toast(err instanceof Error ? err.message : 'Notification тохируулахад алдаа гарлаа');
+    } finally {
+      setNotificationBusy(false);
+    }
+  }
+
   return (
     <>
       <header className="flex-shrink-0 px-6 pt-3">
@@ -190,7 +225,11 @@ export default function More() {
                   <div className="text-[15px] font-semibold text-deep">{f.name}</div>
                   <div className="mt-0.5 text-xs leading-snug text-muted">{f.desc}</div>
                 </div>
-                {f.action === 'song-of-us' && hasCurrentSong ? (
+                {f.action === 'love-notes' && unreadLoveNotes > 0 ? (
+                  <span className="rounded-lg bg-rose px-2 py-0.5 text-[10px] font-bold text-white">
+                    {unreadLoveNotes}
+                  </span>
+                ) : f.action === 'song-of-us' && hasCurrentSong ? (
                   <span className="rounded-lg bg-purple px-2 py-0.5 text-[10px] font-bold text-white">
                     Сонгосон
                   </span>
@@ -250,6 +289,30 @@ export default function More() {
                 className="rounded-lg bg-rose/10 px-3 py-1.5 text-xs font-bold text-rose transition-transform active:scale-95"
               >
                 Солих
+              </button>
+            </div>
+            <div className="mt-3 flex items-center gap-3.5 border-t border-blush/60 pt-3">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+                {notifications === 'granted' ? <Bell size={22} /> : <BellOff size={22} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[15px] font-semibold text-deep">Chat notification</div>
+                <div className="mt-0.5 text-xs leading-snug text-muted">
+                  {notifications === 'unsupported'
+                    ? 'Энэ browser дэмжихгүй байна'
+                    : notifications === 'denied'
+                      ? 'Browser settings-ээс зөвшөөрнө үү'
+                      : notifications === 'granted'
+                        ? 'Энэ төхөөрөмж дээр асаалттай'
+                        : 'Шинэ зурвас ирэхэд мэдэгдэнэ'}
+                </div>
+              </div>
+              <button
+                onClick={() => void toggleNotifications()}
+                disabled={notificationBusy || notifications === 'unsupported' || notifications === 'denied'}
+                className="rounded-lg bg-rose/10 px-3 py-1.5 text-xs font-bold text-rose transition-transform active:scale-95 disabled:opacity-45"
+              >
+                {notificationBusy ? '…' : notifications === 'granted' ? 'Унтраах' : 'Асаах'}
               </button>
             </div>
           </div>
@@ -365,6 +428,11 @@ export default function More() {
         open={songOpen}
         onClose={() => setSongOpen(false)}
         onCurrentChange={setHasCurrentSong}
+      />
+      <LoveNotesSheet
+        open={loveNotesOpen}
+        onClose={() => setLoveNotesOpen(false)}
+        onUnreadChange={setUnreadLoveNotes}
       />
     </>
   );
