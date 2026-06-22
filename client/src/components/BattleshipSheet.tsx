@@ -113,7 +113,11 @@ export default function BattleshipSheet({ open, onClose }: Props) {
   }
 
   async function place(cell: Cell) {
-    await post('/place', { ...cell, rotation });
+    const width = rotation % 180 === 0 ? 3 : 4;
+    const height = rotation % 180 === 0 ? 4 : 3;
+    const x = Math.max(1, Math.min(11 - width, cell.x - Math.floor(width / 2)));
+    const y = Math.max(1, Math.min(11 - height, cell.y - Math.floor(height / 2)));
+    await post('/place', { x, y, rotation });
   }
 
   async function fire() {
@@ -132,7 +136,7 @@ export default function BattleshipSheet({ open, onClose }: Props) {
         {loading || !game ? <p className="py-12 text-center text-sm text-muted">Уншиж байна…</p> : game.status === 'placement' ? (
           <div>
             <p className="mb-2 text-center text-sm font-medium text-deep">Онгоцоо талбай дээр байрлуул</p>
-            <p className="mb-3 text-center text-xs text-muted">Нүд дарж байрлуулна · X нь онгоцны хэсэг</p>
+            <p className="mb-3 text-center text-xs text-muted">Онгоцны төв байрлах нүдээ дарна · X нь онгоцны хэсэг</p>
             <div className="mx-auto mb-3 grid w-16 grid-cols-3 gap-1 text-center text-xs font-bold text-deep">
               {'OXOXXXOXOXXX'.split('').map((value, index) => <span key={index} className={value === 'X' ? 'rounded bg-deep py-0.5 text-white' : 'py-0.5 text-blush'}>{value}</span>)}
             </div>

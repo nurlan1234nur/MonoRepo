@@ -140,12 +140,13 @@ export interface WhoIsMoreQuestion {
   id: string;
   index: number;
   text: string;
-  correctUserIds: string[] | null;
-  selectedUserIds: string[] | null;
+  options: Array<{ id: string; text: string }>;
+  correctOptionId: string | null;
+  selectedOptionId: string | null;
   correct: boolean | null;
 }
 
-export interface WhoIsMoreQuiz {
+export interface WhoIsMoreQuizSummary {
   id: string;
   title: string;
   creatorId: string;
@@ -153,9 +154,14 @@ export interface WhoIsMoreQuiz {
   role: 'creator' | 'player';
   status: 'waiting' | 'playing' | 'completed';
   answeredCount: number;
+  questionCount: number;
   score: number | null;
-  questions: WhoIsMoreQuestion[];
+  canEdit: boolean;
   createdAt: string;
+}
+
+export interface WhoIsMoreQuiz extends WhoIsMoreQuizSummary {
+  questions: WhoIsMoreQuestion[];
 }
 
 export interface BattleshipShot {
