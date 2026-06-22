@@ -14,6 +14,40 @@ type Rotation = 0 | 90 | 180 | 270;
 
 const cellKey = ({ x, y }: Cell) => `${x}:${y}`;
 
+const BASE_PLANE: Cell[] = [
+  { x: 1, y: 0 },
+  { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 },
+  { x: 1, y: 2 },
+  { x: 0, y: 3 }, { x: 1, y: 3 }, { x: 2, y: 3 },
+];
+
+function PlanePreview({ rotation }: { rotation: Rotation }) {
+  let cells = BASE_PLANE.map((cell) => ({ ...cell }));
+  for (let angle = 0; angle < rotation; angle += 90) {
+    cells = cells.map(({ x, y }) => ({ x: -y, y: x }));
+    const minX = Math.min(...cells.map((cell) => cell.x));
+    const minY = Math.min(...cells.map((cell) => cell.y));
+    cells = cells.map(({ x, y }) => ({ x: x - minX, y: y - minY }));
+  }
+  const width = Math.max(...cells.map((cell) => cell.x)) + 1;
+  const height = Math.max(...cells.map((cell) => cell.y)) + 1;
+  const occupied = new Set(cells.map(cellKey));
+
+  return (
+    <div
+      className="mx-auto mb-3 grid w-fit gap-1"
+      style={{ gridTemplateColumns: `repeat(${width}, 18px)` }}
+      aria-label={`Онгоцны чиглэл ${rotation} градус`}
+    >
+      {Array.from({ length: width * height }, (_, index) => {
+        const cell = { x: index % width, y: Math.floor(index / width) };
+        const filled = occupied.has(cellKey(cell));
+        return <span key={index} className={`h-[18px] rounded text-center text-xs font-bold leading-[18px] ${filled ? 'bg-deep text-white' : 'text-blush'}`}>{filled ? 'X' : 'O'}</span>;
+      })}
+    </div>
+  );
+}
+
 interface BoardProps {
   planeCells?: Cell[];
   shots: BattleshipShot[];
@@ -137,9 +171,7 @@ export default function BattleshipSheet({ open, onClose }: Props) {
           <div>
             <p className="mb-2 text-center text-sm font-medium text-deep">Онгоцоо талбай дээр байрлуул</p>
             <p className="mb-3 text-center text-xs text-muted">Онгоцны төв байрлах нүдээ дарна · X нь онгоцны хэсэг</p>
-            <div className="mx-auto mb-3 grid w-16 grid-cols-3 gap-1 text-center text-xs font-bold text-deep">
-              {'OXOXXXOXOXXX'.split('').map((value, index) => <span key={index} className={value === 'X' ? 'rounded bg-deep py-0.5 text-white' : 'py-0.5 text-blush'}>{value}</span>)}
-            </div>
+            <PlanePreview rotation={rotation} />
             <BattleBoard
               planeCells={game.me.plane?.cells}
               shots={game.me.incomingShots}
