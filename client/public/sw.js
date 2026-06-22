@@ -1,5 +1,5 @@
 // nous PWA service worker
-const CACHE = 'nous-v2';
+const CACHE = 'nous-v3';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {

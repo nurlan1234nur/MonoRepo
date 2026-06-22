@@ -44,10 +44,10 @@ function BattleBoard({ planeCells = [], shots, selected, interactive, onSelect }
             {cell.x === 1 && <div className="flex aspect-square items-center justify-center text-[8px] font-semibold text-muted">{cell.y}</div>}
             <button
               type="button"
-              onClick={() => onSelect?.(cell)}
+              onPointerUp={() => onSelect?.(cell)}
               disabled={!interactive || Boolean(shot)}
               aria-label={`${cell.y}-р мөр ${cell.x}-р багана`}
-              className={`relative aspect-square min-w-0 rounded-[2px] transition-colors ${
+              className={`relative aspect-square min-w-0 cursor-pointer touch-manipulation rounded-[2px] transition-colors disabled:cursor-not-allowed ${
                 chosen ? 'bg-rose ring-2 ring-deep' : shot?.result === 'miss' ? 'bg-sky-100' : shot ? 'bg-red-500' : plane.has(cellKey(cell)) ? 'bg-deep' : 'bg-white/90'
               }`}
             >
@@ -157,11 +157,11 @@ export default function BattleshipSheet({ open, onClose }: Props) {
               </button>
               <button
                 type="button"
-                onClick={() => void post('/ready')}
-                disabled={busy || game.me.ready || !game.me.plane}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose py-3 text-sm font-medium text-white disabled:opacity-50"
+                onClick={() => void post(game.me.ready ? '/unready' : '/ready')}
+                disabled={busy || (!game.me.ready && !game.me.plane)}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium disabled:opacity-50 ${game.me.ready ? 'border border-blush bg-white text-deep' : 'bg-rose text-white'}`}
               >
-                <Check size={17} /> {game.me.ready ? 'Бэлэн' : 'Бэлэн болох'}
+                <Check size={17} /> {game.me.ready ? 'Бэлэн цуцлах' : 'Бэлэн болох'}
               </button>
             </div>
             {game.me.ready && <p className="mt-3 text-center text-sm text-muted">{game.opponent.ready ? 'Тоглоом эхэлж байна…' : `${partner?.name ?? 'Partner'}-ийг хүлээж байна…`}</p>}

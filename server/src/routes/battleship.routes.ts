@@ -156,6 +156,19 @@ battleshipRouter.post('/ready', asyncHandler(async (req, res) => {
   res.json({ game: gamePayload(game, req.userId!) });
 }));
 
+battleshipRouter.post('/unready', asyncHandler(async (req, res) => {
+  const game = await getGame(req.coupleId!);
+  const player = game.players.find((item) => item.user.toString() === req.userId);
+  if (!player || game.status !== 'placement') {
+    res.status(409).json({ error: 'Тоглоом эхэлсэн тул бэлэн төлөвийг цуцлах боломжгүй' });
+    return;
+  }
+  player.ready = false;
+  await game.save();
+  notifyChanged(req.coupleId!);
+  res.json({ game: gamePayload(game, req.userId!) });
+}));
+
 const fireSchema = z.object({ x: z.number().int().min(1).max(10), y: z.number().int().min(1).max(10) });
 
 battleshipRouter.post('/fire', asyncHandler(async (req, res) => {
