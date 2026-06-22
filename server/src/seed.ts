@@ -15,6 +15,7 @@ import { WebPushSubscription } from './models/WebPushSubscription.js';
 import { LoveNote } from './models/LoveNote.js';
 import { GameRound } from './models/GameRound.js';
 import { BattleshipGame } from './models/BattleshipGame.js';
+import { WhoIsMoreQuiz } from './models/WhoIsMoreQuiz.js';
 import { questionIndexForDate, todayStr } from './data/questions.js';
 
 // 2 хос (4 хэрэглэгч) + жишээ мессеж/mood/капсул үүсгэдэг test seed.
@@ -43,6 +44,7 @@ async function seed(): Promise<void> {
     LoveNote.deleteMany({}),
     GameRound.deleteMany({}),
     BattleshipGame.deleteMany({}),
+    WhoIsMoreQuiz.deleteMany({}),
   ]);
   console.log('✓ Хуучин өгөгдлийг цэвэрлэлээ');
 

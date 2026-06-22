@@ -136,26 +136,26 @@ export interface LoveNote {
   createdAt: string;
 }
 
-export interface GameAnswer {
-  userId: string;
-  selectedUserIds: string[];
-}
-
-export interface GameRound {
+export interface WhoIsMoreQuestion {
   id: string;
-  roundNumber: number;
-  question: string;
-  answerCount: number;
-  revealed: boolean;
-  matched: boolean | null;
-  answers: GameAnswer[];
-  myChoice: 'self' | 'partner' | 'both' | null;
-  memberIds: string[];
+  index: number;
+  text: string;
+  correctUserIds: string[] | null;
+  selectedUserIds: string[] | null;
+  correct: boolean | null;
 }
 
-export interface GameStats {
-  matches: number;
-  total: number;
+export interface WhoIsMoreQuiz {
+  id: string;
+  title: string;
+  creatorId: string;
+  playerId: string;
+  role: 'creator' | 'player';
+  status: 'waiting' | 'playing' | 'completed';
+  answeredCount: number;
+  score: number | null;
+  questions: WhoIsMoreQuestion[];
+  createdAt: string;
 }
 
 export interface BattleshipShot {
@@ -172,7 +172,7 @@ export interface BattleshipGame {
   winnerUserId: string | null;
   me: {
     ready: boolean;
-    ships: Array<{ type: string; cells: Array<{ x: number; y: number }> }>;
+    plane: { x: number; y: number; rotation: 0 | 90 | 180 | 270; cells: Array<{ x: number; y: number }> } | null;
     incomingShots: BattleshipShot[];
   };
   opponent: {

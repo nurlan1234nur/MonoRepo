@@ -458,7 +458,7 @@ export default function More() {
             <span className="text-2xl">💭</span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold text-deep">Хэн нь илүү?</span>
-              <span className="mt-0.5 block text-xs text-muted">Хариултаа нууж, бодлоо тааруулах</span>
+              <span className="mt-0.5 block text-xs text-muted">Тест үүсгээд partner-аараа тоглуулах</span>
             </span>
           </button>
           <button
@@ -469,10 +469,10 @@ export default function More() {
             }}
             className="flex w-full items-center gap-3.5 rounded-xl bg-white px-4 py-3.5 text-left shadow-sm"
           >
-            <span className="text-2xl">🚢</span>
+            <span className="text-2xl">✈️</span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold text-deep">Онгоц буудах</span>
-              <span className="mt-0.5 block text-xs text-muted">10×10 талбай дээр ээлжээр буудах</span>
+              <span className="mt-0.5 block text-xs text-muted">Дүрст онгоцоо байрлуулаад ээлжээр буудах</span>
             </span>
           </button>
         </div>

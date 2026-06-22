@@ -24,6 +24,11 @@ const playerSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     ready: { type: Boolean, default: false },
+    plane: {
+      x: { type: Number, min: 1, max: 10 },
+      y: { type: Number, min: 1, max: 10 },
+      rotation: { type: Number, enum: [0, 90, 180, 270] },
+    },
     ships: { type: [shipSchema], default: [] },
     shots: { type: [shotSchema], default: [] },
   },
