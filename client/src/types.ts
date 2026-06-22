@@ -167,7 +167,7 @@ export interface WhoIsMoreQuiz extends WhoIsMoreQuizSummary {
 export interface BattleshipShot {
   x: number;
   y: number;
-  result: 'hit' | 'miss' | 'sunk';
+  result: 'hit' | 'miss' | 'sunk' | 'head';
   sunkShip?: string;
 }
 

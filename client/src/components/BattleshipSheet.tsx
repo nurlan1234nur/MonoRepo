@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Crosshair, Grid3X3, RefreshCw, RotateCw, Trophy } from 'lucide-react';
-import Sheet from './Sheet';
+import { Check, Crosshair, Grid3X3, RefreshCw, RotateCw, Trophy, X } from 'lucide-react';
 import { useToast } from './Toast';
 import { useAuth } from '../context/AuthContext';
 import { useCouple } from '../context/CoupleContext';
@@ -82,11 +81,11 @@ function BattleBoard({ planeCells = [], shots, selected, interactive, onSelect }
               disabled={!interactive || Boolean(shot)}
               aria-label={`${cell.y}-р мөр ${cell.x}-р багана`}
               className={`relative aspect-square min-w-0 cursor-pointer touch-manipulation rounded-[2px] transition-colors disabled:cursor-not-allowed ${
-                chosen ? 'bg-rose ring-2 ring-deep' : shot?.result === 'miss' ? 'bg-sky-100' : shot ? 'bg-red-500' : plane.has(cellKey(cell)) ? 'bg-deep' : 'bg-white/90'
+                chosen ? 'bg-rose ring-2 ring-deep' : shot?.result === 'miss' ? 'bg-sky-100' : shot?.result === 'head' ? 'bg-amber-400 ring-2 ring-red-600' : shot ? 'bg-red-500' : plane.has(cellKey(cell)) ? 'bg-deep' : 'bg-white/90'
               }`}
             >
               {shot?.result === 'miss' && <span className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500" />}
-              {shot && shot.result !== 'miss' && <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-white" />}
+              {shot && shot.result !== 'miss' && <span className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-white ${shot.result === 'head' ? 'text-[9px]' : 'h-1.5 w-1.5 rotate-45 bg-white'}`}>{shot.result === 'head' ? '★' : ''}</span>}
             </button>
           </div>
         );
@@ -105,6 +104,7 @@ export default function BattleshipSheet({ open, onClose }: Props) {
   const [rotation, setRotation] = useState<Rotation>(0);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
 
   const loadGame = useCallback(async () => {
     setLoading(true);
@@ -159,14 +159,29 @@ export default function BattleshipSheet({ open, onClose }: Props) {
     const target = selected;
     const updated = await post('/fire', target);
     const shot = updated?.opponent.shots.find((item) => item.x === target.x && item.y === target.y);
-    if (shot) toast(shot.result === 'miss' ? 'Оносонгүй' : shot.result === 'sunk' ? 'Онгоц бүрэн сөнөлөө!' : 'Оносон!');
+    if (shot) toast(shot.result === 'miss' ? 'Оносонгүй' : shot.result === 'head' ? 'Онгоцны толгойг онолоо — та яллаа!' : shot.result === 'sunk' ? 'Онгоц бүрэн сөнөлөө!' : 'Оносон!');
   }
 
   const myTurn = game?.status === 'playing' && game.turnUserId === user?.id;
+  if (!open) return null;
 
   return (
-    <Sheet open={open} onClose={onClose} title="Онгоц буудах">
-      <div className="max-h-[76vh] overflow-y-auto pb-1">
+    <div className="absolute inset-0 z-[60] flex flex-col bg-cream">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-blush/60 bg-white/90 px-5 backdrop-blur">
+        <div>
+          <div className="text-lg font-semibold text-deep">Онгоц буудах</div>
+          <div className="text-[11px] text-muted">Толгойг нь оновол ялна</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setConfirmExit(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-warm text-deep"
+          aria-label="Тоглоомоос гарах"
+        >
+          <X size={20} />
+        </button>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-4">
         {loading || !game ? <p className="py-12 text-center text-sm text-muted">Уншиж байна…</p> : game.status === 'placement' ? (
           <div>
             <p className="mb-2 text-center text-sm font-medium text-deep">Онгоцоо талбай дээр байрлуул</p>
@@ -218,10 +233,23 @@ export default function BattleshipSheet({ open, onClose }: Props) {
             {game.status === 'finished' && (
               <button type="button" onClick={() => void post('/reset')} disabled={busy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-rose py-3 text-sm font-medium text-white disabled:opacity-60"><RefreshCw size={17} /> Дахин тоглох</button>
             )}
-            {game.status === 'finished' && game.winnerUserId === user?.id && <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-rose"><Trophy size={18} /> Онгоцны бүх 8 хэсгийг онолоо</div>}
+            {game.status === 'finished' && game.winnerUserId === user?.id && <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-rose"><Trophy size={18} /> Онгоцны толгойг онолоо</div>}
           </div>
         )}
       </div>
-    </Sheet>
+
+      {confirmExit && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-deep/55 px-6">
+          <div className="w-full rounded-2xl bg-white p-5 text-center shadow-2xl">
+            <div className="text-lg font-semibold text-deep">Тоглоомоос гарах уу?</div>
+            <p className="mt-2 text-sm leading-relaxed text-muted">Таны байрлал болон тоглолтын явц хадгалагдана. Дараа нь үргэлжлүүлж болно.</p>
+            <div className="mt-5 grid grid-cols-2 gap-2.5">
+              <button type="button" onClick={() => setConfirmExit(false)} className="rounded-xl border border-blush py-3 text-sm font-semibold text-deep">Үгүй</button>
+              <button type="button" onClick={() => { setConfirmExit(false); onClose(); }} className="rounded-xl bg-rose py-3 text-sm font-semibold text-white">Тийм, гарах</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

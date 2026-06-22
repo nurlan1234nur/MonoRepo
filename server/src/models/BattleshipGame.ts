@@ -14,7 +14,7 @@ const shotSchema = new Schema(
   {
     x: { type: Number, required: true, min: 1, max: 10 },
     y: { type: Number, required: true, min: 1, max: 10 },
-    result: { type: String, enum: ['hit', 'miss', 'sunk'], required: true },
+    result: { type: String, enum: ['hit', 'miss', 'sunk', 'head'], required: true },
     sunkShip: { type: String, default: '' },
   },
   { _id: false, timestamps: true },

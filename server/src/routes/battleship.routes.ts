@@ -187,12 +187,17 @@ battleshipRouter.post('/fire', asyncHandler(async (req, res) => {
 
   const targetCells = planeCells(defender.plane ?? {});
   const hit = targetCells.some((cell) => cell.x === x && cell.y === y);
-  const previousHits = new Set(attacker.shots.filter((shot) => shot.result !== 'miss').map((shot) => `${shot.x}:${shot.y}`));
-  if (hit) previousHits.add(`${x}:${y}`);
-  const lost = targetCells.length === 8 && targetCells.every((cell) => previousHits.has(`${cell.x}:${cell.y}`));
-  attacker.shots.push({ x, y, result: hit ? (lost ? 'sunk' : 'hit') : 'miss', sunkShip: lost ? 'plane' : '' });
+  // BASE_PLANE-ийн эхний нүд нь онгоцны хамар; эргэхэд дараалал хадгалагдана.
+  const head = targetCells[0];
+  const hitHead = Boolean(head && head.x === x && head.y === y);
+  attacker.shots.push({
+    x,
+    y,
+    result: hitHead ? 'head' : hit ? 'hit' : 'miss',
+    sunkShip: hitHead ? 'plane' : '',
+  });
 
-  if (lost) {
+  if (hitHead) {
     game.status = 'finished';
     game.winner = attacker.user;
     game.turn = null;
