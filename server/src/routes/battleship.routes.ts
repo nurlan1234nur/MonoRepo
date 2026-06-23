@@ -35,7 +35,7 @@ function planeCells(plane: Plane) {
   const x = plane.x;
   const y = plane.y;
   const rotation = plane.rotation as Rotation | undefined;
-  if (!x || !y || rotation === undefined) return [];
+  if (x == null || y == null || rotation === undefined) return [];
   return relativePlaneCells(rotation).map((cell) => ({ x: x + cell.x, y: y + cell.y }));
 }
 

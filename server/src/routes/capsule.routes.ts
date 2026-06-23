@@ -58,3 +58,20 @@ capsuleRouter.post(
     });
   }),
 );
+
+capsuleRouter.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const capsule = await Capsule.findOne({ _id: req.params.id, couple: req.coupleId });
+    if (!capsule) {
+      res.status(404).json({ error: 'Капсул олдсонгүй' });
+      return;
+    }
+    if (capsule.author.toString() !== req.userId) {
+      res.status(403).json({ error: 'Зөвхөн өөрийн бичсэн капсулыг устгана' });
+      return;
+    }
+    await capsule.deleteOne();
+    res.json({ ok: true });
+  }),
+);

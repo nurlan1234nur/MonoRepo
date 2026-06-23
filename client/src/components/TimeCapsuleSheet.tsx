@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import Sheet from './Sheet';
 import Avatar from './Avatar';
 import { useToast } from './Toast';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { formatDateTime } from '../lib/date';
 import type { Capsule } from '../types';
@@ -26,6 +28,7 @@ interface Props {
 }
 
 export default function TimeCapsuleSheet({ open, onClose, onCountChange }: Props) {
+  const { user } = useAuth();
   const toast = useToast();
   const [capsules, setCapsules] = useState<Capsule[]>([]);
   const [creating, setCreating] = useState(false);
@@ -86,6 +89,19 @@ export default function TimeCapsuleSheet({ open, onClose, onCountChange }: Props
     setCreating(false);
     setText('');
     onClose();
+  }
+
+  async function deleteCapsule(id: string) {
+    if (!window.confirm('Энэ цаг капсулыг устгах уу?')) return;
+    try {
+      await api(`/capsules/${id}`, { method: 'DELETE' });
+      const next = capsules.filter((capsule) => capsule.id !== id);
+      setCapsules(next);
+      onCountChange?.(next.length);
+      toast('Цаг капсул устгагдлаа');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Капсул устгахад алдаа гарлаа');
+    }
   }
 
   return (
@@ -171,9 +187,21 @@ export default function TimeCapsuleSheet({ open, onClose, onCountChange }: Props
                           {capsule.unlocked ? 'Нээгдсэн' : 'Нээгдэнэ'}: {formatDateTime(capsule.unlockAt)}
                         </div>
                       </div>
-                      <span className="text-xl" aria-label={capsule.unlocked ? 'Нээлттэй' : 'Түгжээтэй'}>
-                        {capsule.unlocked ? '🔓' : '🔒'}
-                      </span>
+                      {capsule.author._id === user?.id ? (
+                        <button
+                          type="button"
+                          onClick={() => void deleteCapsule(capsule.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-warm text-rose"
+                          aria-label="Цаг капсул устгах"
+                          title="Цаг капсул устгах"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      ) : (
+                        <span className="text-xl" aria-label={capsule.unlocked ? 'Нээлттэй' : 'Түгжээтэй'}>
+                          {capsule.unlocked ? '🔓' : '🔒'}
+                        </span>
+                      )}
                     </div>
                     {capsule.unlocked && capsule.text ? (
                       <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-deep">{capsule.text}</p>

@@ -8,6 +8,7 @@ import TimeCapsuleSheet from '../components/TimeCapsuleSheet';
 import DreamJarSheet from '../components/DreamJarSheet';
 import SongOfUsSheet from '../components/SongOfUsSheet';
 import LoveNotesSheet from '../components/LoveNotesSheet';
+import AnniversaryReminderSheet from '../components/AnniversaryReminderSheet';
 import CoupleGameSheet from '../components/CoupleGameSheet';
 import BattleshipSheet from '../components/BattleshipSheet';
 import PasswordInput from '../components/PasswordInput';
@@ -26,7 +27,7 @@ interface Feat {
   desc: string;
   badge?: string;
   toast: string;
-  action?: 'capsule' | 'dream-jar' | 'song-of-us' | 'love-notes' | 'couple-game';
+  action?: 'capsule' | 'dream-jar' | 'song-of-us' | 'love-notes' | 'couple-game' | 'anniversary-reminder';
 }
 
 const SECTIONS: { title: string; items: Feat[] }[] = [
@@ -49,7 +50,7 @@ const SECTIONS: { title: string; items: Feat[] }[] = [
     items: [
       { icon: '🎮', color: 'bg-gradient-to-br from-[#d4e8f7] to-[#c4d8f0]', name: 'Хосуудын тоглоом', desc: 'Хоёулаа хариулж, бодлоо тааруулах', badge: 'Шинэ', toast: '', action: 'couple-game' },
       { icon: '📝', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Love Notes', desc: 'Нуугдсан тэмдэглэл үлдээх', toast: '', action: 'love-notes' },
-      { icon: '🔔', color: 'bg-gradient-to-br from-[#d4f7d4] to-[#c4f0c4]', name: 'Ойн сануулга', desc: 'Чухал өдрүүдийн автомат сануулга', toast: '🔔 Сануулга — удахгүй!' },
+      { icon: '🔔', color: 'bg-gradient-to-br from-[#d4f7d4] to-[#c4f0c4]', name: 'Ойн сануулга', desc: 'Чухал өдрүүдийн автомат сануулга', toast: '', action: 'anniversary-reminder' },
     ],
   },
 ];
@@ -72,6 +73,7 @@ export default function More() {
   const [hasCurrentSong, setHasCurrentSong] = useState(false);
   const [loveNotesOpen, setLoveNotesOpen] = useState(false);
   const [unreadLoveNotes, setUnreadLoveNotes] = useState(0);
+  const [anniversaryReminderOpen, setAnniversaryReminderOpen] = useState(false);
   const [gameOpen, setGameOpen] = useState(false);
   const [gameMenuOpen, setGameMenuOpen] = useState(false);
   const [battleshipOpen, setBattleshipOpen] = useState(false);
@@ -90,6 +92,10 @@ export default function More() {
     }
     if (feature.action === 'love-notes') {
       setLoveNotesOpen(true);
+      return;
+    }
+    if (feature.action === 'anniversary-reminder') {
+      setAnniversaryReminderOpen(true);
       return;
     }
     if (feature.action === 'song-of-us') {
@@ -442,6 +448,10 @@ export default function More() {
         open={loveNotesOpen}
         onClose={() => setLoveNotesOpen(false)}
         onUnreadChange={setUnreadLoveNotes}
+      />
+      <AnniversaryReminderSheet
+        open={anniversaryReminderOpen}
+        onClose={() => setAnniversaryReminderOpen(false)}
       />
       <CoupleGameSheet open={gameOpen} onClose={() => setGameOpen(false)} />
       <BattleshipSheet open={battleshipOpen} onClose={() => setBattleshipOpen(false)} />

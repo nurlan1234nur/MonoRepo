@@ -77,7 +77,7 @@ function BattleBoard({ planeCells = [], shots, selected, interactive, onSelect }
             {cell.x === 1 && <div className="flex aspect-square items-center justify-center text-[8px] font-semibold text-muted">{cell.y}</div>}
             <button
               type="button"
-              onPointerUp={() => onSelect?.(cell)}
+              onClick={() => onSelect?.(cell)}
               disabled={!interactive || Boolean(shot)}
               aria-label={`${cell.y}-р мөр ${cell.x}-р багана`}
               className={`relative aspect-square min-w-0 cursor-pointer touch-manipulation rounded-[2px] transition-colors disabled:cursor-not-allowed ${
