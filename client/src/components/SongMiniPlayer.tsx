@@ -1,4 +1,4 @@
-import { Maximize2, Minimize2, Music2, Pause, Play, SkipBack, SkipForward, X } from 'lucide-react';
+import { Maximize2, Music2, Pause, Play, SkipBack, SkipForward, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSongPlayer } from '../context/SongPlayerContext';
@@ -32,7 +32,7 @@ function formatTime(seconds: number): string {
 export default function SongMiniPlayer() {
   const navigate = useNavigate();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const dragStartRef = useRef<{ pointerX: number; pointerY: number; left: number; top: number } | null>(null);
   const scrubStartRef = useRef<{ y: number; time: number } | null>(null);
   const {
     currentSong,
@@ -49,7 +49,8 @@ export default function SongMiniPlayer() {
   const [collapsed, setCollapsed] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [bubblePos, setBubblePos] = useState<{ side: 'left' | 'right'; top: number }>({ side: 'right', top: 0 });
+  const [dragPos, setDragPos] = useState<{ left: number; top: number } | null>(null);
   const [dragged, setDragged] = useState(false);
 
   const videoId = currentSong ? youtubeVideoId(currentSong.url) : null;
@@ -80,7 +81,8 @@ export default function SongMiniPlayer() {
     setCurrentTime(0);
     setDuration(0);
     setCollapsed(false);
-    setDragOffset({ x: 0, y: 0 });
+    setBubblePos({ side: 'right', top: Math.max(88, window.innerHeight - 150) });
+    setDragPos(null);
   }, [currentSong?._id]);
 
   useEffect(() => {
@@ -135,7 +137,8 @@ export default function SongMiniPlayer() {
   }
 
   function onCollapsedPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
-    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragStartRef.current = { pointerX: e.clientX, pointerY: e.clientY, left: rect.left, top: rect.top };
     setDragged(false);
     e.currentTarget.setPointerCapture(e.pointerId);
   }
@@ -143,22 +146,31 @@ export default function SongMiniPlayer() {
   function onCollapsedPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
     const start = dragStartRef.current;
     if (!start) return;
-    const x = e.clientX - start.x;
-    const y = e.clientY - start.y;
-    if (Math.hypot(x, y) > 6) setDragged(true);
-    setDragOffset({ x, y });
+    const left = start.left + e.clientX - start.pointerX;
+    const top = start.top + e.clientY - start.pointerY;
+    if (Math.hypot(e.clientX - start.pointerX, e.clientY - start.pointerY) > 6) setDragged(true);
+    setDragPos({ left, top });
   }
 
   function onCollapsedPointerUp(e: React.PointerEvent<HTMLButtonElement>) {
     const start = dragStartRef.current;
     dragStartRef.current = null;
     e.currentTarget.releasePointerCapture(e.pointerId);
-    if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 100) {
+    const trashTop = window.innerHeight - 118;
+    if (dragPos && dragPos.top > trashTop) {
       stopSong();
       return;
     }
-    setDragOffset({ x: 0, y: 0 });
-    if (!dragged) setCollapsed(false);
+    if (dragPos) {
+      const frameWidth = Math.min(window.innerWidth, 480);
+      const frameLeft = (window.innerWidth - frameWidth) / 2;
+      const centerX = dragPos.left + 24;
+      const side = centerX < frameLeft + frameWidth / 2 ? 'left' : 'right';
+      const maxTop = window.innerHeight - 150;
+      setBubblePos({ side, top: Math.min(Math.max(80, dragPos.top), maxTop) });
+    }
+    setDragPos(null);
+    if (start && !dragged) setCollapsed(false);
   }
 
   function onScrubPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
@@ -209,27 +221,40 @@ export default function SongMiniPlayer() {
       allowFullScreen
     />
   ) : null;
+  const frameWidth = Math.min(window.innerWidth, 480);
+  const frameLeft = (window.innerWidth - frameWidth) / 2;
+  const bubbleLeft = bubblePos.side === 'left' ? frameLeft + 12 : frameLeft + frameWidth - 60;
+  const activeBubbleLeft = dragPos?.left ?? bubbleLeft;
+  const activeBubbleTop = dragPos?.top ?? bubblePos.top;
+  const showTrash = Boolean(dragPos && dragPos.top > window.innerHeight - 220);
 
   return (
     <>
       {persistentPlayer}
       {collapsed ? (
-        <button
-          type="button"
-          onPointerDown={onCollapsedPointerDown}
-          onPointerMove={onCollapsedPointerMove}
-          onPointerUp={onCollapsedPointerUp}
-          onPointerCancel={() => {
-            dragStartRef.current = null;
-            setDragOffset({ x: 0, y: 0 });
-          }}
-          aria-label="Show song player"
-          title="Show song player"
-          style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }}
-          className="fixed bottom-[90px] right-[max(12px,calc((100vw-480px)/2+12px))] z-40 flex h-12 w-12 touch-none items-center justify-center rounded-full bg-deep text-blush shadow-[0_8px_24px_rgba(45,31,46,0.24)]"
-        >
-          <Music2 size={21} aria-hidden="true" />
-        </button>
+        <>
+          <button
+            type="button"
+            onPointerDown={onCollapsedPointerDown}
+            onPointerMove={onCollapsedPointerMove}
+            onPointerUp={onCollapsedPointerUp}
+            onPointerCancel={() => {
+              dragStartRef.current = null;
+              setDragPos(null);
+            }}
+            aria-label="Show song player"
+            title="Show song player"
+            style={{ left: activeBubbleLeft, top: activeBubbleTop }}
+            className="fixed z-40 flex h-12 w-12 touch-none items-center justify-center rounded-full bg-deep text-blush shadow-[0_8px_24px_rgba(45,31,46,0.24)] transition-[left,top] duration-150"
+          >
+            <Music2 size={21} aria-hidden="true" />
+          </button>
+          {showTrash && (
+            <div className="pointer-events-none fixed bottom-8 left-1/2 z-40 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full bg-rose text-white shadow-[0_10px_28px_rgba(232,96,122,0.35)]">
+              <Trash2 size={25} aria-hidden="true" />
+            </div>
+          )}
+        </>
       ) : (
         <div className="pointer-events-none fixed inset-x-0 bottom-[82px] z-40 mx-auto w-full max-w-[480px] px-3">
           <div className="pointer-events-auto overflow-hidden rounded-2xl border border-blush/70 bg-card shadow-[0_8px_28px_rgba(45,31,46,0.18)]">
@@ -309,15 +334,6 @@ export default function SongMiniPlayer() {
                   onClick={() => setCollapsed(true)}
                   aria-label="Minimize player"
                   title="Minimize player"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-warm text-muted"
-                >
-                  <Minimize2 size={15} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={stopSong}
-                  aria-label="Close player"
-                  title="Close player"
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-warm text-muted"
                 >
                   <X size={16} aria-hidden="true" />
