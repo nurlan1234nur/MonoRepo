@@ -1,5 +1,19 @@
-import { useState } from 'react';
-import { Bell, BellOff, KeyRound } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  Bell,
+  BellOff,
+  Clock3,
+  Gamepad2,
+  Gift,
+  KeyRound,
+  Mail,
+  MapPinned,
+  MessageCircle,
+  Music2,
+  NotebookPen,
+  Plane,
+  type LucideIcon,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCouple } from '../context/CoupleContext';
 import { useToast } from '../components/Toast';
@@ -21,7 +35,7 @@ import {
 } from '../lib/notifications';
 
 interface Feat {
-  icon: string;
+  icon: LucideIcon;
   color: string;
   name: string;
   desc: string;
@@ -34,23 +48,23 @@ const SECTIONS: { title: string; items: Feat[] }[] = [
   {
     title: '🌟 Тусгай зүйлс',
     items: [
-      { icon: '🫙', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Dream Jar', desc: 'Хамтдаа биелүүлэх хүслийн сан', toast: '', action: 'dream-jar' },
-      { icon: '🎵', color: 'bg-gradient-to-br from-[#e8d4f7] to-[#d4c4f0]', name: 'Song of Us', desc: 'Долоо хоног бүрийн хамтын дуу', toast: '', action: 'song-of-us' },
-      { icon: '🕯️', color: 'bg-gradient-to-br from-[#f7eed4] to-[#f0e0b8]', name: 'Цаг Капсул', desc: 'Ирээдүйд нээгдэх нууц захидал', toast: '', action: 'capsule' },
+      { icon: Gift, color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Dream Jar', desc: 'Хамтдаа биелүүлэх хүслийн сан', toast: '', action: 'dream-jar' },
+      { icon: Music2, color: 'bg-gradient-to-br from-[#e8d4f7] to-[#d4c4f0]', name: 'Song of Us', desc: 'Долоо хоног бүрийн хамтын дуу', toast: '', action: 'song-of-us' },
+      { icon: Clock3, color: 'bg-gradient-to-br from-[#f7eed4] to-[#f0e0b8]', name: 'Цаг Капсул', desc: 'Ирээдүйд нээгдэх нууц захидал', toast: '', action: 'capsule' },
     ],
   },
   {
     title: '🗺️ Хамтын газрууд',
     items: [
-      { icon: '🗺️', color: 'bg-gradient-to-br from-[#d4f7f0] to-[#c4f0e8]', name: 'Memory Map', desc: 'Дурсамжтай газруудаа тэмдэглэх', toast: '🗺️ Memory Map — удахгүй!' },
+      { icon: MapPinned, color: 'bg-gradient-to-br from-[#d4f7f0] to-[#c4f0e8]', name: 'Memory Map', desc: 'Дурсамжтай газруудаа тэмдэглэх', toast: 'Memory Map — удахгүй!' },
     ],
   },
   {
     title: '🎮 Хоёулаа',
     items: [
-      { icon: '🎮', color: 'bg-gradient-to-br from-[#d4e8f7] to-[#c4d8f0]', name: 'Хосуудын тоглоом', desc: 'Хоёулаа хариулж, бодлоо тааруулах', badge: 'Шинэ', toast: '', action: 'couple-game' },
-      { icon: '📝', color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Love Notes', desc: 'Нуугдсан тэмдэглэл үлдээх', toast: '', action: 'love-notes' },
-      { icon: '🔔', color: 'bg-gradient-to-br from-[#d4f7d4] to-[#c4f0c4]', name: 'Ойн сануулга', desc: 'Чухал өдрүүдийн автомат сануулга', toast: '', action: 'anniversary-reminder' },
+      { icon: Gamepad2, color: 'bg-gradient-to-br from-[#d4e8f7] to-[#c4d8f0]', name: 'Хосуудын тоглоом', desc: 'Хоёулаа хариулж, бодлоо тааруулах', badge: 'Шинэ', toast: '', action: 'couple-game' },
+      { icon: NotebookPen, color: 'bg-gradient-to-br from-[#f7d4da] to-blush', name: 'Love Notes', desc: 'Нуугдсан тэмдэглэл үлдээх', toast: '', action: 'love-notes' },
+      { icon: Bell, color: 'bg-gradient-to-br from-[#d4f7d4] to-[#c4f0c4]', name: 'Ойн сануулга', desc: 'Чухал өдрүүдийн автомат сануулга', toast: '', action: 'anniversary-reminder' },
     ],
   },
 ];
@@ -84,6 +98,19 @@ export default function More() {
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [notifications, setNotifications] = useState<NotificationStatus>(notificationStatus);
   const [notificationBusy, setNotificationBusy] = useState(false);
+
+  useEffect(() => {
+    function openSongSheet() {
+      sessionStorage.removeItem('open-song-of-us');
+      setSongOpen(true);
+    }
+
+    if (sessionStorage.getItem('open-song-of-us') === '1') {
+      openSongSheet();
+    }
+    window.addEventListener('open-song-of-us', openSongSheet);
+    return () => window.removeEventListener('open-song-of-us', openSongSheet);
+  }, []);
 
   function openFeature(feature: Feat) {
     if (feature.action === 'couple-game') {
@@ -233,8 +260,8 @@ export default function More() {
                 onClick={() => openFeature(f)}
                 className="mb-2.5 flex w-full items-center gap-3.5 rounded-2xl bg-card px-3.5 py-3.5 text-left shadow-[0_2px_14px_rgba(45,31,46,0.07)] transition-transform active:scale-[0.97]"
               >
-                <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-2xl ${f.color}`}>
-                  {f.icon}
+                <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-rose ${f.color}`}>
+                  <f.icon size={23} strokeWidth={2.1} aria-hidden="true" />
                 </div>
                 <div className="flex-1">
                   <div className="text-[15px] font-semibold text-deep">{f.name}</div>
@@ -275,8 +302,8 @@ export default function More() {
           </div>
           <div className="rounded-2xl bg-card px-3.5 py-3.5 shadow-[0_2px_14px_rgba(45,31,46,0.07)]">
             <div className="flex items-center gap-3.5">
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#d4e8f7] to-[#c4d8f0] text-2xl">
-                📧
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#d4e8f7] to-[#c4d8f0] text-rose">
+                <Mail size={22} aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <div className="text-[15px] font-semibold text-deep">Сэргээх Gmail</div>
@@ -465,7 +492,9 @@ export default function More() {
             }}
             className="flex w-full items-center gap-3.5 rounded-xl bg-white px-4 py-3.5 text-left shadow-sm"
           >
-            <span className="text-2xl">💭</span>
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+              <MessageCircle size={22} aria-hidden="true" />
+            </span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold text-deep">Хэн нь илүү?</span>
               <span className="mt-0.5 block text-xs text-muted">Тест үүсгээд partner-аараа тоглуулах</span>
@@ -479,7 +508,9 @@ export default function More() {
             }}
             className="flex w-full items-center gap-3.5 rounded-xl bg-white px-4 py-3.5 text-left shadow-sm"
           >
-            <span className="text-2xl">✈️</span>
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+              <Plane size={22} aria-hidden="true" />
+            </span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold text-deep">Онгоц буудах</span>
               <span className="mt-0.5 block text-xs text-muted">Дүрст онгоцоо байрлуулаад ээлжээр буудах</span>

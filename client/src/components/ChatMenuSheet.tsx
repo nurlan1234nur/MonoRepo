@@ -1,13 +1,20 @@
+import { HeartHandshake, Images, Palette, Search, Trash2, type LucideIcon } from 'lucide-react';
 import Sheet from './Sheet';
 
-const ITEMS = [
-  { id: 'profile', icon: '💑', label: 'Хайрын профайл' },
-  { id: 'media', icon: '🖼️', label: 'Илгээсэн зургууд' },
-  { id: 'search', icon: '🔍', label: 'Зурвас хайх' },
-  { id: 'wallpaper', icon: '🎨', label: 'Дэвсгэр солих' },
-  // Одоогоор нуусан — кодыг (clearChat, DELETE /messages) дараа дахин нээхэд бэлэн үлдээв.
-  { id: 'clear', icon: '🗑️', label: 'Чат цэвэрлэх', danger: true, hidden: true },
-] as const;
+const ITEMS: Array<{
+  id: 'profile' | 'media' | 'search' | 'wallpaper' | 'clear';
+  icon: LucideIcon;
+  label: string;
+  danger?: boolean;
+  hidden?: boolean;
+}> = [
+  { id: 'profile', icon: HeartHandshake, label: 'Хайрын профайл' },
+  { id: 'media', icon: Images, label: 'Илгээсэн зургууд' },
+  { id: 'search', icon: Search, label: 'Зурвас хайх' },
+  { id: 'wallpaper', icon: Palette, label: 'Дэвсгэр солих' },
+  // Одоогоор нуусан: clearChat / DELETE /messages кодыг дараа дахин нээхэд бэлэн.
+  { id: 'clear', icon: Trash2, label: 'Чат цэвэрлэх', danger: true, hidden: true },
+];
 
 export type ChatMenuAction = (typeof ITEMS)[number]['id'];
 
@@ -23,15 +30,17 @@ export default function ChatMenuSheet({
   return (
     <Sheet open={open} onClose={onClose} title="Чатын тохиргоо">
       <div className="space-y-1">
-        {ITEMS.filter((it) => !('hidden' in it && it.hidden)).map((it) => (
+        {ITEMS.filter((it) => !it.hidden).map((it) => (
           <button
             key={it.id}
             onClick={() => onSelect(it.id)}
             className={`flex w-full items-center gap-3.5 rounded-2xl px-3.5 py-3 text-left transition-colors active:bg-warm ${
-              'danger' in it && it.danger ? 'text-rose' : 'text-deep'
+              it.danger ? 'text-rose' : 'text-deep'
             }`}
           >
-            <span className="text-xl">{it.icon}</span>
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+              <it.icon size={20} aria-hidden="true" />
+            </span>
             <span className="text-[15px] font-medium">{it.label}</span>
           </button>
         ))}

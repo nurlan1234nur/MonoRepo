@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
+import { CalendarDays, Home, Images, MessageCircle, Sparkles, type LucideIcon } from 'lucide-react';
 
-const tabs = [
-  { to: '/', icon: '🏠', label: 'Нүүр' },
-  { to: '/timeline', icon: '📅', label: 'Түүх' },
-  { to: '/memories', icon: '📸', label: 'Дурсамж', big: true },
-  { to: '/chat', icon: '💬', label: 'Чат' },
-  { to: '/more', icon: '✨', label: 'Илүү' },
+const tabs: Array<{ to: string; icon: LucideIcon; label: string; big?: boolean }> = [
+  { to: '/', icon: Home, label: 'Нүүр' },
+  { to: '/timeline', icon: CalendarDays, label: 'Түүх' },
+  { to: '/memories', icon: Images, label: 'Дурсамж', big: true },
+  { to: '/chat', icon: MessageCircle, label: 'Чат' },
+  { to: '/more', icon: Sparkles, label: 'Илүү' },
 ];
 
 export default function BottomNav() {
@@ -24,13 +25,12 @@ export default function BottomNav() {
         >
           {({ isActive }) => (
             <>
-              <span
-                className={`transition-transform ${t.big ? 'text-[30px]' : 'text-[22px]'} ${
-                  isActive ? 'scale-110' : ''
-                }`}
-              >
-                {t.icon}
-              </span>
+              <t.icon
+                size={t.big ? 29 : 23}
+                strokeWidth={isActive ? 2.5 : 2}
+                className={`transition-transform ${isActive ? 'scale-110 text-rose' : 'text-muted'}`}
+                aria-hidden="true"
+              />
               <span
                 className={`font-medium ${t.big ? 'text-[11px]' : 'text-[10px]'} ${
                   isActive ? 'font-bold text-rose' : 'text-muted'
