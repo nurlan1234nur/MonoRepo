@@ -1,7 +1,8 @@
-import { Maximize2, Music2, Pause, Play, SkipBack, SkipForward, Trash2, X } from 'lucide-react';
+import { Clock3, Maximize2, Music2, Pause, Play, SkipBack, SkipForward, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSongPlayer } from '../context/SongPlayerContext';
+import Sheet from './Sheet';
 
 function youtubeVideoId(url: string): string | null {
   function valid(candidate: string | null | undefined): string | null {
@@ -33,7 +34,6 @@ export default function SongMiniPlayer() {
   const navigate = useNavigate();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const dragStartRef = useRef<{ pointerX: number; pointerY: number; left: number; top: number } | null>(null);
-  const scrubStartRef = useRef<{ y: number; time: number } | null>(null);
   const {
     currentSong,
     queue,
@@ -52,6 +52,7 @@ export default function SongMiniPlayer() {
   const [bubblePos, setBubblePos] = useState<{ side: 'left' | 'right'; top: number }>({ side: 'right', top: 0 });
   const [dragPos, setDragPos] = useState<{ left: number; top: number } | null>(null);
   const [dragged, setDragged] = useState(false);
+  const [seekOpen, setSeekOpen] = useState(false);
 
   const videoId = currentSong ? youtubeVideoId(currentSong.url) : null;
   const currentIndex = currentSong ? queue.findIndex((song) => song._id === currentSong._id) : -1;
@@ -69,12 +70,16 @@ export default function SongMiniPlayer() {
     iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: command, args }), '*');
   }
 
-  function seekBy(delta: number) {
+  function seekTo(value: number) {
     const max = duration > 0 ? duration : Number.POSITIVE_INFINITY;
-    const next = Math.max(0, Math.min(max, currentTime + delta));
+    const next = Math.max(0, Math.min(max, value));
     setCurrentTime(next);
     setSeekSeconds(next);
     postYouTube('seekTo', [next, true]);
+  }
+
+  function seekBy(delta: number) {
+    seekTo(currentTime + delta);
   }
 
   useEffect(() => {
@@ -173,29 +178,6 @@ export default function SongMiniPlayer() {
     if (start && !dragged) setCollapsed(false);
   }
 
-  function onScrubPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
-    scrubStartRef.current = { y: e.clientY, time: currentTime };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }
-
-  function onScrubPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
-    const start = scrubStartRef.current;
-    if (!start) return;
-    const delta = Math.round((start.y - e.clientY) / 8);
-    const max = duration > 0 ? duration : Number.POSITIVE_INFINITY;
-    const next = Math.max(0, Math.min(max, start.time + delta));
-    setCurrentTime(next);
-  }
-
-  function onScrubPointerUp(e: React.PointerEvent<HTMLButtonElement>) {
-    if (scrubStartRef.current) {
-      setSeekSeconds(currentTime);
-      postYouTube('seekTo', [currentTime, true]);
-    }
-    scrubStartRef.current = null;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-  }
-
   const thumbnail = (
     <div className="relative h-[54px] w-24 flex-shrink-0 overflow-hidden rounded-xl bg-deep">
       {currentSong.thumbnailUrl ? (
@@ -227,6 +209,7 @@ export default function SongMiniPlayer() {
   const activeBubbleLeft = dragPos?.left ?? bubbleLeft;
   const activeBubbleTop = dragPos?.top ?? bubblePos.top;
   const showTrash = Boolean(dragPos && dragPos.top > window.innerHeight - 220);
+  const seekMax = Math.max(1, Math.ceil(duration || Math.max(currentTime + 60, 180)));
 
   return (
     <>
@@ -259,38 +242,24 @@ export default function SongMiniPlayer() {
         <div className="pointer-events-none fixed inset-x-0 bottom-[82px] z-40 mx-auto w-full max-w-[480px] px-3">
           <div className="pointer-events-auto overflow-hidden rounded-2xl border border-blush/70 bg-card shadow-[0_8px_28px_rgba(45,31,46,0.18)]">
             <div className="flex items-center gap-3 p-2.5">
+              <button
+                type="button"
+                onClick={() => setSeekOpen(true)}
+                aria-label="Seek song"
+                title="Seek song"
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-warm text-rose"
+              >
+                <Clock3 size={17} aria-hidden="true" />
+              </button>
               {thumbnail}
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <div className="truncate text-[13px] font-semibold text-deep">{currentSong.title}</div>
                 <div className="truncate text-[11px] text-muted">{currentSong.artist}</div>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="w-8 text-[10px] tabular-nums text-muted">{formatTime(currentTime)}</span>
-                  <button
-                    type="button"
-                    onWheel={(e) => {
-                      e.preventDefault();
-                      seekBy(e.deltaY > 0 ? -5 : 5);
-                    }}
-                    onPointerDown={onScrubPointerDown}
-                    onPointerMove={onScrubPointerMove}
-                    onPointerUp={onScrubPointerUp}
-                    onPointerCancel={() => {
-                      scrubStartRef.current = null;
-                    }}
-                    aria-label="Seek song"
-                    title="Seek song"
-                    className="relative h-8 min-w-0 flex-1 touch-none rounded-full bg-warm"
-                  >
-                    <span className="absolute left-1/2 top-1/2 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-rose/70" />
-                    <span className="absolute left-[calc(50%-9px)] top-1/2 h-1.5 w-1.5 -translate-y-[11px] rounded-full bg-muted/50" />
-                    <span className="absolute left-[calc(50%-9px)] top-1/2 h-1.5 w-1.5 translate-y-[6px] rounded-full bg-muted/50" />
-                  </button>
-                  <span className="w-8 text-right text-[10px] tabular-nums text-muted">
-                    {duration > 0 ? formatTime(duration) : '--:--'}
-                  </span>
+                <div className="mt-1 text-[10px] tabular-nums text-muted">
+                  {formatTime(currentTime)} / {duration > 0 ? formatTime(duration) : '--:--'}
                 </div>
               </div>
-              <div className="flex flex-shrink-0 items-center gap-1">
+              <div className="grid flex-shrink-0 grid-cols-3 gap-1">
                 <button
                   type="button"
                   onClick={playPrevious}
@@ -343,6 +312,52 @@ export default function SongMiniPlayer() {
           </div>
         </div>
       )}
+      <Sheet open={seekOpen} onClose={() => setSeekOpen(false)} title="Дууны секунд">
+        <div className="space-y-4">
+          <div className="text-center">
+            <div className="text-3xl font-bold tabular-nums text-deep">{formatTime(currentTime)}</div>
+            <div className="mt-1 text-xs tabular-nums text-muted">{duration > 0 ? formatTime(duration) : '--:--'}</div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={seekMax}
+            value={Math.min(Math.floor(currentTime), seekMax)}
+            onChange={(e) => seekTo(Number(e.target.value))}
+            className="w-full accent-rose"
+            aria-label="Дууны секунд"
+          />
+          <div className="grid grid-cols-4 gap-2">
+            {[-30, -10, 10, 30].map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => seekBy(value)}
+                className="rounded-xl bg-warm py-3 text-sm font-semibold text-rose"
+              >
+                {value > 0 ? `+${value}` : value}s
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              min={0}
+              max={seekMax}
+              value={Math.floor(currentTime)}
+              onChange={(e) => seekTo(Number(e.target.value))}
+              className="min-w-0 flex-1 rounded-xl border border-blush/60 bg-white px-4 py-3 text-sm text-deep outline-none focus:border-rose"
+            />
+            <button
+              type="button"
+              onClick={() => setSeekOpen(false)}
+              className="rounded-xl bg-rose px-5 py-3 text-sm font-semibold text-white"
+            >
+              Болсон
+            </button>
+          </div>
+        </div>
+      </Sheet>
     </>
   );
 }
