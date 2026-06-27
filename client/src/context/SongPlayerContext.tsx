@@ -6,10 +6,12 @@ interface SongPlayerContextValue {
   queue: WeeklySong[];
   isPaused: boolean;
   seekSeconds: number;
+  playRequest: number;
   setQueue: (songs: WeeklySong[]) => void;
   playSong: (song: WeeklySong, songs?: WeeklySong[]) => void;
   stopSong: () => void;
   togglePause: () => void;
+  requestPlay: () => void;
   setSeekSeconds: (seconds: number) => void;
   removeSong: (songId: string) => void;
   playNext: () => void;
@@ -34,6 +36,7 @@ export function SongPlayerProvider({ children }: { children: ReactNode }) {
   const [queue, setQueueState] = useState<WeeklySong[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [seekSeconds, setSeekSecondsState] = useState(0);
+  const [playRequest, setPlayRequest] = useState(0);
 
   const currentIndex = currentSong ? queue.findIndex((song) => song._id === currentSong._id) : -1;
   const hasPrevious = currentIndex > 0;
@@ -47,6 +50,7 @@ export function SongPlayerProvider({ children }: { children: ReactNode }) {
     setQueueState((existing) => uniqueSongs(songs?.length ? songs : [song, ...existing]));
     setCurrentSong(song);
     setIsPaused(false);
+    setPlayRequest((value) => value + 1);
   }, []);
 
   const stopSong = useCallback(() => {
@@ -57,6 +61,11 @@ export function SongPlayerProvider({ children }: { children: ReactNode }) {
 
   const togglePause = useCallback(() => {
     setIsPaused((paused) => !paused);
+  }, []);
+
+  const requestPlay = useCallback(() => {
+    setIsPaused(false);
+    setPlayRequest((value) => value + 1);
   }, []);
 
   const setSeekSeconds = useCallback((seconds: number) => {
@@ -100,10 +109,12 @@ export function SongPlayerProvider({ children }: { children: ReactNode }) {
       queue,
       isPaused,
       seekSeconds,
+      playRequest,
       setQueue,
       playSong,
       stopSong,
       togglePause,
+      requestPlay,
       setSeekSeconds,
       removeSong,
       playNext,
@@ -119,6 +130,7 @@ export function SongPlayerProvider({ children }: { children: ReactNode }) {
       playNext,
       playPrevious,
       playSong,
+      playRequest,
       queue,
       removeSong,
       seekSeconds,
@@ -126,6 +138,7 @@ export function SongPlayerProvider({ children }: { children: ReactNode }) {
       setSeekSeconds,
       stopSong,
       togglePause,
+      requestPlay,
     ],
   );
 

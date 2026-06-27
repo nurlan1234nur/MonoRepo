@@ -40,6 +40,7 @@ export default function SongMiniPlayer() {
     hasNext,
     hasPrevious,
     isPaused,
+    playRequest,
     playNext,
     playPrevious,
     setSeekSeconds,
@@ -125,8 +126,18 @@ export default function SongMiniPlayer() {
 
   useEffect(() => {
     if (!currentSong || !videoId) return;
-    postYouTube(isPaused ? 'pauseVideo' : 'playVideo');
-  }, [currentSong, isPaused, videoId]);
+    if (isPaused) {
+      postYouTube('pauseVideo');
+      return;
+    }
+    postYouTube('playVideo');
+    const t1 = window.setTimeout(() => postYouTube('playVideo'), 250);
+    const t2 = window.setTimeout(() => postYouTube('playVideo'), 900);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [currentSong, isPaused, playRequest, videoId]);
 
   if (!currentSong) return null;
 
@@ -182,6 +193,12 @@ export default function SongMiniPlayer() {
     <iframe
       ref={iframeRef}
       key={currentSong._id}
+      onLoad={() => {
+        if (!isPaused) {
+          window.setTimeout(() => postYouTube('playVideo'), 120);
+          window.setTimeout(() => postYouTube('playVideo'), 500);
+        }
+      }}
       src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${origin}&rel=0&playsinline=1${playlist ? `&playlist=${playlist}` : ''}`}
       title={`${currentSong.title} - ${currentSong.artist}`}
       className="pointer-events-none fixed bottom-0 right-0 h-px w-px border-0 opacity-0"

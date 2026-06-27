@@ -53,7 +53,7 @@ function youtubeVideoId(url: string): string | null {
 
 export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props) {
   const toast = useToast();
-  const { currentSong, isPaused, playSong, removeSong, setQueue, togglePause } = useSongPlayer();
+  const { currentSong, isPaused, playSong, removeSong, requestPlay, setQueue } = useSongPlayer();
   const [current, setCurrent] = useState<WeeklySong | null>(null);
   const [displaySong, setDisplaySong] = useState<WeeklySong | null>(null);
   const [songs, setSongs] = useState<WeeklySong[]>([]);
@@ -155,7 +155,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
   function playFromList(song: WeeklySong) {
     setDisplaySong(song);
     if (currentSong?._id === song._id) {
-      togglePause();
+      requestPlay();
       return;
     }
     playSong(song, songs);
