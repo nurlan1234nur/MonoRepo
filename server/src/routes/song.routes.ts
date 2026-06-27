@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { isValidObjectId } from 'mongoose';
 import { z } from 'zod';
 import { WeeklySong } from '../models/WeeklySong.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -96,5 +97,24 @@ songRouter.put(
 
     emitToCouple(req.coupleId!, 'song:update', song);
     res.json({ song });
+  }),
+);
+
+songRouter.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    if (!isValidObjectId(req.params.id)) {
+      res.status(400).json({ error: 'Дууны ID буруу байна' });
+      return;
+    }
+
+    const song = await WeeklySong.findOneAndDelete({ _id: req.params.id, couple: req.coupleId });
+    if (!song) {
+      res.status(404).json({ error: 'Дуу олдсонгүй' });
+      return;
+    }
+
+    emitToCouple(req.coupleId!, 'song:delete', { id: song._id.toString() });
+    res.json({ ok: true });
   }),
 );

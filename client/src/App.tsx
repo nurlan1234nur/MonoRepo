@@ -1,10 +1,12 @@
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { CoupleProvider } from './context/CoupleContext';
+import { SongPlayerProvider } from './context/SongPlayerContext';
 import AuthPage from './pages/AuthPage';
 import CoupleSetup from './pages/CoupleSetup';
 import Layout from './components/Layout';
 import PhoneFrame from './components/PhoneFrame';
+import SongMiniPlayer from './components/SongMiniPlayer';
 import Home from './pages/Home';
 import Timeline from './pages/Timeline';
 import Chat from './pages/Chat';
@@ -25,22 +27,25 @@ export default function App() {
 
   return (
     <CoupleProvider>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/timeline" element={<Timeline />} />
-          <Route path="/memories" element={<Memories />} />
-          <Route path="/more" element={<More />} />
-        </Route>
-        <Route
-          path="/chat"
-          element={
-            <PhoneFrame>
-              <Chat />
-            </PhoneFrame>
-          }
-        />
-      </Routes>
+      <SongPlayerProvider>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/timeline" element={<Timeline />} />
+            <Route path="/memories" element={<Memories />} />
+            <Route path="/more" element={<More />} />
+          </Route>
+          <Route
+            path="/chat"
+            element={
+              <PhoneFrame>
+                <Chat />
+              </PhoneFrame>
+            }
+          />
+        </Routes>
+        <SongMiniPlayer />
+      </SongPlayerProvider>
     </CoupleProvider>
   );
 }

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ExternalLink, Music2, Pencil, Play, Save, Search } from 'lucide-react';
+import { ExternalLink, Music2, Pencil, Play, Save, Search, Trash2 } from 'lucide-react';
 import Sheet from './Sheet';
 import Avatar from './Avatar';
 import { useToast } from './Toast';
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
+import { useSongPlayer } from '../context/SongPlayerContext';
 import type { WeeklySong } from '../types';
 
 interface Props {
@@ -17,7 +18,7 @@ function weekLabel(weekStart: string): string {
   const start = new Date(weekStart);
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
-  return `${start.getMonth() + 1}-р сарын ${start.getDate()} – ${end.getMonth() + 1}-р сарын ${end.getDate()}`;
+  return `${start.getMonth() + 1}-р сарын ${start.getDate()} - ${end.getMonth() + 1}-р сарын ${end.getDate()}`;
 }
 
 function providerLabel(url: string): string {
@@ -31,29 +32,9 @@ function providerLabel(url: string): string {
   return 'Дууг нээх';
 }
 
-function youtubeVideoId(url: string): string | null {
-  function valid(candidate: string | null | undefined): string | null {
-    return candidate && /^[A-Za-z0-9_-]{6,20}$/.test(candidate) ? candidate : null;
-  }
-
-  try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.toLowerCase();
-    if (host === 'youtu.be') return valid(parsed.pathname.split('/').filter(Boolean)[0]);
-    if (!host.endsWith('youtube.com')) return null;
-    if (parsed.pathname === '/watch') return valid(parsed.searchParams.get('v'));
-    const parts = parsed.pathname.split('/').filter(Boolean);
-    if (parts[0] === 'shorts' || parts[0] === 'embed' || parts[0] === 'live') {
-      return valid(parts[1]);
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
 export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props) {
   const toast = useToast();
+  const { playSong, removeSong, setQueue } = useSongPlayer();
   const [current, setCurrent] = useState<WeeklySong | null>(null);
   const [songs, setSongs] = useState<WeeklySong[]>([]);
   const [editing, setEditing] = useState(false);
@@ -72,6 +53,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
       const result = await api<{ current: WeeklySong | null; songs: WeeklySong[] }>('/songs');
       setCurrent(result.current);
       setSongs(result.songs);
+      setQueue(result.songs);
       setEditing(!result.current);
       if (!result.current) {
         setTitle('');
@@ -85,7 +67,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     } finally {
       setLoading(false);
     }
-  }, [onCurrentChange, toast]);
+  }, [onCurrentChange, setQueue, toast]);
 
   useEffect(() => {
     if (!open) return;
@@ -97,14 +79,33 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     const socket = getSocket();
     const updateSong = (song: WeeklySong) => {
       setCurrent(song);
-      setSongs((existing) => [song, ...existing.filter((item) => item._id !== song._id)]);
+      setSongs((existing) => {
+        const next = [song, ...existing.filter((item) => item._id !== song._id)];
+        setQueue(next);
+        return next;
+      });
       onCurrentChange?.(true);
     };
+    const deleteSong = ({ id }: { id: string }) => {
+      setCurrent((existing) => {
+        const nextCurrent = existing?._id === id ? null : existing;
+        onCurrentChange?.(Boolean(nextCurrent));
+        return nextCurrent;
+      });
+      setSongs((existing) => {
+        const next = existing.filter((item) => item._id !== id);
+        setQueue(next);
+        return next;
+      });
+      removeSong(id);
+    };
     socket.on('song:update', updateSong);
+    socket.on('song:delete', deleteSong);
     return () => {
       socket.off('song:update', updateSong);
+      socket.off('song:delete', deleteSong);
     };
-  }, [onCurrentChange]);
+  }, [onCurrentChange, removeSong, setQueue]);
 
   function startEditing() {
     setTitle(current?.title ?? '');
@@ -153,7 +154,11 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
         body: JSON.stringify({ title, artist, url, thumbnailUrl }),
       });
       setCurrent(result.song);
-      setSongs((existing) => [result.song, ...existing.filter((item) => item._id !== result.song._id)]);
+      setSongs((existing) => {
+        const next = [result.song, ...existing.filter((item) => item._id !== result.song._id)];
+        setQueue(next);
+        return next;
+      });
       setEditing(false);
       onCurrentChange?.(true);
       toast('Энэ долоо хоногийн дуу хадгалагдлаа');
@@ -164,14 +169,34 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     }
   }
 
+  async function removeSavedSong(song: WeeklySong) {
+    const confirmed = window.confirm(`"${song.title}" дууг жагсаалтаас устгах уу?`);
+    if (!confirmed) return;
+    try {
+      await api<{ ok: true }>(`/songs/${song._id}`, { method: 'DELETE' });
+      const nextCurrent = current?._id === song._id ? null : current;
+      setCurrent(nextCurrent);
+      setSongs((existing) => {
+        const next = existing.filter((item) => item._id !== song._id);
+        setQueue(next);
+        return next;
+      });
+      removeSong(song._id);
+      if (!nextCurrent) setEditing(true);
+      onCurrentChange?.(Boolean(nextCurrent));
+      toast('Дуу устгагдлаа');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Дуу устгахад алдаа гарлаа');
+    }
+  }
+
   const history = current ? songs.filter((song) => song._id !== current._id) : songs;
-  const currentYouTubeId = current ? youtubeVideoId(current.url) : null;
 
   return (
     <Sheet open={open} onClose={onClose} title="Song of Us">
       <div className="max-h-[70vh] overflow-y-auto pb-1">
         {loading ? (
-          <p className="py-10 text-center text-sm text-muted">Уншиж байна…</p>
+          <p className="py-10 text-center text-sm text-muted">Уншиж байна...</p>
         ) : editing ? (
           <form onSubmit={saveSong} className="space-y-3">
             <p className="text-center text-xs text-muted">Энэ долоо хоногийн хамтын дуу</p>
@@ -220,14 +245,8 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
                 className="w-full rounded-xl border border-blush/60 bg-white py-3 pl-11 pr-4 text-sm text-deep outline-none focus:border-rose"
               />
             </div>
-            {previewing && <p className="text-center text-xs text-muted">YouTube мэдээлэл уншиж байна…</p>}
-            {thumbnailUrl && (
-              <img
-                src={thumbnailUrl}
-                alt=""
-                className="aspect-video w-full rounded-xl object-cover"
-              />
-            )}
+            {previewing && <p className="text-center text-xs text-muted">YouTube мэдээлэл уншиж байна...</p>}
+            {thumbnailUrl && <img src={thumbnailUrl} alt="" className="aspect-video w-full rounded-xl object-cover" />}
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -260,55 +279,112 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose py-3 text-sm font-medium text-white disabled:opacity-60"
               >
                 <Save size={17} aria-hidden="true" />
-                {saving ? 'Хадгалж байна…' : 'Хадгалах'}
+                {saving ? 'Хадгалж байна...' : 'Хадгалах'}
               </button>
             </div>
+            {history.length > 0 && (
+              <section className="pt-2">
+                <div className="mb-2 text-xs font-semibold text-muted">Өмнөх дуунууд</div>
+                <div className="divide-y divide-blush/60">
+                  {history.map((song) => (
+                    <div key={song._id} className="flex items-center gap-3 py-3.5">
+                      <button
+                        type="button"
+                        onClick={() => playSong(song, songs)}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      >
+                        {song.thumbnailUrl ? (
+                          <img src={song.thumbnailUrl} alt="" className="h-10 w-14 flex-shrink-0 rounded-lg object-cover" />
+                        ) : (
+                          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+                            <Music2 size={18} aria-hidden="true" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium text-deep">{song.title}</div>
+                          <div className="truncate text-xs text-muted">
+                            {song.artist} · {weekLabel(song.weekStart)}
+                          </div>
+                        </div>
+                        <Play size={15} className="flex-shrink-0 text-rose" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void removeSavedSong(song)}
+                        aria-label="Дуу устгах"
+                        title="Дуу устгах"
+                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-warm text-muted"
+                      >
+                        <Trash2 size={15} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </form>
         ) : current ? (
           <div>
             <section className="mb-5 overflow-hidden rounded-2xl bg-deep text-white shadow-lg">
-              {currentYouTubeId ? (
-                <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${currentYouTubeId}?rel=0`}
-                  title={`${current.title} — ${current.artist}`}
-                  className="aspect-video w-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                />
-              ) : current.thumbnailUrl ? (
-                <img src={current.thumbnailUrl} alt="" className="aspect-video w-full object-cover" />
-              ) : null}
-              <div className="p-5">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-blush">
-                  <Music2 size={23} aria-hidden="true" />
-                </div>
-                <button
-                  type="button"
-                  onClick={startEditing}
-                  aria-label="Хамтын дуу засах"
-                  title="Хамтын дуу засах"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white"
-                >
-                  <Pencil size={17} aria-hidden="true" />
-                </button>
-              </div>
-              <div className="text-lg font-semibold leading-snug">{current.title}</div>
-              <div className="mt-1 text-sm text-blush">{current.artist}</div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-white/65">
-                <Avatar value={current.selectedBy.avatar} className="h-6 w-6" emojiClassName="text-xs" />
-                <span>{current.selectedBy.name} сонгосон</span>
-              </div>
-              <a
-                href={current.url}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-rose py-2.5 text-sm font-medium text-white"
+              <button
+                type="button"
+                onClick={() => playSong(current, songs)}
+                className="group relative block aspect-video w-full bg-black text-left"
               >
-                {providerLabel(current.url)}
-                <ExternalLink size={16} aria-hidden="true" />
-              </a>
+                {current.thumbnailUrl ? (
+                  <img src={current.thumbnailUrl} alt="" className="h-full w-full object-cover opacity-85" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-white/10 text-blush">
+                    <Music2 size={38} aria-hidden="true" />
+                  </div>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-rose text-white shadow-lg transition-transform group-active:scale-95">
+                    <Play size={24} fill="currentColor" aria-hidden="true" />
+                  </span>
+                </span>
+              </button>
+              <div className="p-5">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-blush">
+                    <Music2 size={23} aria-hidden="true" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={startEditing}
+                      aria-label="Хамтын дуу засах"
+                      title="Хамтын дуу засах"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white"
+                    >
+                      <Pencil size={17} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void removeSavedSong(current)}
+                      aria-label="Дуу устгах"
+                      title="Дуу устгах"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white"
+                    >
+                      <Trash2 size={17} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+                <div className="text-lg font-semibold leading-snug">{current.title}</div>
+                <div className="mt-1 text-sm text-blush">{current.artist}</div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-white/65">
+                  <Avatar value={current.selectedBy.avatar} className="h-6 w-6" emojiClassName="text-xs" />
+                  <span>{current.selectedBy.name} сонгосон</span>
+                </div>
+                <a
+                  href={current.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-rose py-2.5 text-sm font-medium text-white"
+                >
+                  {providerLabel(current.url)}
+                  <ExternalLink size={16} aria-hidden="true" />
+                </a>
               </div>
             </section>
 
@@ -317,26 +393,37 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
                 <div className="mb-2 text-xs font-semibold text-muted">Өмнөх дуунууд</div>
                 <div className="divide-y divide-blush/60">
                   {history.map((song) => (
-                    <a
-                      key={song._id}
-                      href={song.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-3 py-3.5"
-                    >
-                      {song.thumbnailUrl ? (
-                        <img src={song.thumbnailUrl} alt="" className="h-10 w-14 flex-shrink-0 rounded-lg object-cover" />
-                      ) : (
-                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
-                          <Music2 size={18} aria-hidden="true" />
+                    <div key={song._id} className="flex items-center gap-3 py-3.5">
+                      <button
+                        type="button"
+                        onClick={() => playSong(song, songs)}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      >
+                        {song.thumbnailUrl ? (
+                          <img src={song.thumbnailUrl} alt="" className="h-10 w-14 flex-shrink-0 rounded-lg object-cover" />
+                        ) : (
+                          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+                            <Music2 size={18} aria-hidden="true" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium text-deep">{song.title}</div>
+                          <div className="truncate text-xs text-muted">
+                            {song.artist} · {weekLabel(song.weekStart)}
+                          </div>
                         </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-deep">{song.title}</div>
-                        <div className="truncate text-xs text-muted">{song.artist} · {weekLabel(song.weekStart)}</div>
-                      </div>
-                      <ExternalLink size={15} className="flex-shrink-0 text-muted" aria-hidden="true" />
-                    </a>
+                        <Play size={15} className="flex-shrink-0 text-rose" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void removeSavedSong(song)}
+                        aria-label="Дуу устгах"
+                        title="Дуу устгах"
+                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-warm text-muted"
+                      >
+                        <Trash2 size={15} aria-hidden="true" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </section>
