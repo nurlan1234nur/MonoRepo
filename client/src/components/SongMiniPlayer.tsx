@@ -178,19 +178,6 @@ export default function SongMiniPlayer() {
     if (start && !dragged) setCollapsed(false);
   }
 
-  const thumbnail = (
-    <div className="relative h-[54px] w-24 flex-shrink-0 overflow-hidden rounded-xl bg-deep">
-      {currentSong.thumbnailUrl ? (
-        <img src={currentSong.thumbnailUrl} alt="" className="h-full w-full object-cover" />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-blush">
-          <Music2 size={22} aria-hidden="true" />
-        </div>
-      )}
-      <div className="absolute inset-0 bg-black/10" />
-    </div>
-  );
-
   const persistentPlayer = videoId ? (
     <iframe
       ref={iframeRef}
@@ -228,7 +215,9 @@ export default function SongMiniPlayer() {
             aria-label="Show song player"
             title="Show song player"
             style={{ left: activeBubbleLeft, top: activeBubbleTop }}
-            className="fixed z-40 flex h-12 w-12 touch-none items-center justify-center rounded-full bg-deep text-blush shadow-[0_8px_24px_rgba(45,31,46,0.24)] transition-[left,top] duration-150"
+            className={`fixed z-40 flex h-12 w-12 touch-none items-center justify-center rounded-full bg-deep text-blush shadow-[0_8px_24px_rgba(45,31,46,0.24)] ${
+              dragPos ? '' : 'transition-[left,top] duration-200 ease-out'
+            }`}
           >
             <Music2 size={21} aria-hidden="true" />
           </button>
@@ -241,7 +230,8 @@ export default function SongMiniPlayer() {
       ) : (
         <div className="pointer-events-none fixed inset-x-0 bottom-[82px] z-40 mx-auto w-full max-w-[480px] px-3">
           <div className="pointer-events-auto overflow-hidden rounded-2xl border border-blush/70 bg-card shadow-[0_8px_28px_rgba(45,31,46,0.18)]">
-            <div className="flex items-center gap-3 p-2.5">
+            <div className="space-y-2 p-2.5">
+              <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setSeekOpen(true)}
@@ -251,7 +241,16 @@ export default function SongMiniPlayer() {
               >
                 <Clock3 size={17} aria-hidden="true" />
               </button>
-              {thumbnail}
+              <div className="relative h-11 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-deep">
+                {currentSong.thumbnailUrl ? (
+                  <img src={currentSong.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-blush">
+                    <Music2 size={20} aria-hidden="true" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/10" />
+              </div>
               <div className="min-w-0 flex-1 overflow-hidden">
                 <div className="truncate text-[13px] font-semibold text-deep">{currentSong.title}</div>
                 <div className="truncate text-[11px] text-muted">{currentSong.artist}</div>
@@ -259,14 +258,15 @@ export default function SongMiniPlayer() {
                   {formatTime(currentTime)} / {duration > 0 ? formatTime(duration) : '--:--'}
                 </div>
               </div>
-              <div className="grid flex-shrink-0 grid-cols-3 gap-1">
+              </div>
+              <div className="grid grid-cols-5 gap-1.5">
                 <button
                   type="button"
                   onClick={playPrevious}
                   disabled={!hasPrevious}
                   aria-label="Previous song"
                   title="Previous song"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-warm text-deep disabled:opacity-35"
+                  className="flex h-9 items-center justify-center rounded-xl bg-warm text-deep disabled:opacity-35"
                 >
                   <SkipBack size={16} aria-hidden="true" />
                 </button>
@@ -275,7 +275,7 @@ export default function SongMiniPlayer() {
                   onClick={togglePlayback}
                   aria-label={isPaused ? 'Continue song' : 'Pause song'}
                   title={isPaused ? 'Continue song' : 'Pause song'}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-rose text-white"
+                  className="flex h-9 items-center justify-center rounded-xl bg-rose text-white"
                 >
                   {isPaused ? <Play size={17} fill="currentColor" aria-hidden="true" /> : <Pause size={17} aria-hidden="true" />}
                 </button>
@@ -285,7 +285,7 @@ export default function SongMiniPlayer() {
                   disabled={!hasNext}
                   aria-label="Next song"
                   title="Next song"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-warm text-deep disabled:opacity-35"
+                  className="flex h-9 items-center justify-center rounded-xl bg-warm text-deep disabled:opacity-35"
                 >
                   <SkipForward size={16} aria-hidden="true" />
                 </button>
@@ -294,7 +294,7 @@ export default function SongMiniPlayer() {
                   onClick={openSongOfUs}
                   aria-label="Open Song of Us"
                   title="Open Song of Us"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-rose/10 text-rose"
+                  className="flex h-9 items-center justify-center rounded-xl bg-rose/10 text-rose"
                 >
                   <Maximize2 size={15} aria-hidden="true" />
                 </button>
@@ -303,7 +303,7 @@ export default function SongMiniPlayer() {
                   onClick={() => setCollapsed(true)}
                   aria-label="Minimize player"
                   title="Minimize player"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-warm text-muted"
+                  className="flex h-9 items-center justify-center rounded-xl bg-warm text-muted"
                 >
                   <X size={16} aria-hidden="true" />
                 </button>
