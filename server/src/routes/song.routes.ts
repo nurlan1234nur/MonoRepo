@@ -11,24 +11,14 @@ export const songRouter = Router();
 
 songRouter.use(requireAuth, requireCouple);
 
-function currentWeekStart(): Date {
-  const ulaanbaatarOffset = 8 * 60 * 60 * 1000;
-  const local = new Date(Date.now() + ulaanbaatarOffset);
-  const daysSinceMonday = (local.getUTCDay() + 6) % 7;
-  local.setUTCDate(local.getUTCDate() - daysSinceMonday);
-  local.setUTCHours(0, 0, 0, 0);
-  return new Date(local.getTime() - ulaanbaatarOffset);
-}
-
 songRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     const songs = await WeeklySong.find({ couple: req.coupleId })
-      .sort({ weekStart: -1 })
+      .sort({ createdAt: -1 })
       .limit(24)
       .populate('selectedBy', 'name avatar');
-    const weekStart = currentWeekStart().toISOString();
-    const current = songs.find((song) => song.weekStart.toISOString() === weekStart) ?? null;
+    const current = songs[0] ?? null;
     res.json({ current, songs });
   }),
 );
@@ -85,15 +75,41 @@ const songSchema = z.object({
   thumbnailUrl: z.string().trim().url().max(1000).or(z.literal('')).optional(),
 });
 
-songRouter.put(
-  '/current',
+songRouter.post(
+  '/',
   asyncHandler(async (req, res) => {
     const songData = songSchema.parse(req.body);
+    const song = await WeeklySong.create({
+      ...songData,
+      couple: req.coupleId,
+      weekStart: new Date(),
+      selectedBy: req.userId,
+    });
+    await song.populate('selectedBy', 'name avatar');
+
+    emitToCouple(req.coupleId!, 'song:update', song);
+    res.json({ song });
+  }),
+);
+
+songRouter.put(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    if (!isValidObjectId(req.params.id)) {
+      res.status(400).json({ error: 'Дууны ID буруу байна' });
+      return;
+    }
+
+    const songData = songSchema.parse(req.body);
     const song = await WeeklySong.findOneAndUpdate(
-      { couple: req.coupleId, weekStart: currentWeekStart() },
-      { ...songData, selectedBy: req.userId },
-      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+      { _id: req.params.id, couple: req.coupleId },
+      songData,
+      { new: true, runValidators: true },
     ).populate('selectedBy', 'name avatar');
+    if (!song) {
+      res.status(404).json({ error: 'Дуу олдсонгүй' });
+      return;
+    }
 
     emitToCouple(req.coupleId!, 'song:update', song);
     res.json({ song });

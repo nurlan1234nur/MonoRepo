@@ -38,6 +38,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
   const [current, setCurrent] = useState<WeeklySong | null>(null);
   const [songs, setSongs] = useState<WeeklySong[]>([]);
   const [editing, setEditing] = useState(false);
+  const [editingSongId, setEditingSongId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [url, setUrl] = useState('');
@@ -55,6 +56,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
       setSongs(result.songs);
       setQueue(result.songs);
       setEditing(!result.current);
+      setEditingSongId(null);
       if (!result.current) {
         setTitle('');
         setArtist('');
@@ -87,13 +89,13 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
       onCurrentChange?.(true);
     };
     const deleteSong = ({ id }: { id: string }) => {
-      setCurrent((existing) => {
-        const nextCurrent = existing?._id === id ? null : existing;
-        onCurrentChange?.(Boolean(nextCurrent));
-        return nextCurrent;
-      });
       setSongs((existing) => {
         const next = existing.filter((item) => item._id !== id);
+        setCurrent((currentSong) => {
+          const nextCurrent = currentSong?._id === id ? next[0] ?? null : currentSong;
+          onCurrentChange?.(Boolean(nextCurrent));
+          return nextCurrent;
+        });
         setQueue(next);
         return next;
       });
@@ -112,6 +114,17 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     setArtist(current?.artist ?? '');
     setUrl(current?.url ?? '');
     setThumbnailUrl(current?.thumbnailUrl ?? '');
+    setEditingSongId(current?._id ?? null);
+    setEditing(true);
+  }
+
+  function startAdding() {
+    setTitle('');
+    setArtist('');
+    setUrl('');
+    setThumbnailUrl('');
+    setSearchQuery('');
+    setEditingSongId(null);
     setEditing(true);
   }
 
@@ -149,8 +162,8 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     e.preventDefault();
     setSaving(true);
     try {
-      const result = await api<{ song: WeeklySong }>('/songs/current', {
-        method: 'PUT',
+      const result = await api<{ song: WeeklySong }>(editingSongId ? `/songs/${editingSongId}` : '/songs', {
+        method: editingSongId ? 'PUT' : 'POST',
         body: JSON.stringify({ title, artist, url, thumbnailUrl }),
       });
       setCurrent(result.song);
@@ -160,8 +173,9 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
         return next;
       });
       setEditing(false);
+      setEditingSongId(null);
       onCurrentChange?.(true);
-      toast('Энэ долоо хоногийн дуу хадгалагдлаа');
+      toast(editingSongId ? 'Дуу шинэчлэгдлээ' : 'Шинэ дуу list-д нэмэгдлээ');
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Дуу хадгалахад алдаа гарлаа');
     } finally {
@@ -174,13 +188,11 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     if (!confirmed) return;
     try {
       await api<{ ok: true }>(`/songs/${song._id}`, { method: 'DELETE' });
-      const nextCurrent = current?._id === song._id ? null : current;
+      const next = songs.filter((item) => item._id !== song._id);
+      const nextCurrent = current?._id === song._id ? next[0] ?? null : current;
+      setSongs(next);
       setCurrent(nextCurrent);
-      setSongs((existing) => {
-        const next = existing.filter((item) => item._id !== song._id);
-        setQueue(next);
-        return next;
-      });
+      setQueue(next);
       removeSong(song._id);
       if (!nextCurrent) setEditing(true);
       onCurrentChange?.(Boolean(nextCurrent));
@@ -190,7 +202,7 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
     }
   }
 
-  const history = current ? songs.filter((song) => song._id !== current._id) : songs;
+  const listedSongs = songs;
 
   return (
     <Sheet open={open} onClose={onClose} title="Song of Us">
@@ -199,7 +211,9 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
           <p className="py-10 text-center text-sm text-muted">Уншиж байна...</p>
         ) : editing ? (
           <form onSubmit={saveSong} className="space-y-3">
-            <p className="text-center text-xs text-muted">Энэ долоо хоногийн хамтын дуу</p>
+            <p className="text-center text-xs text-muted">
+              {editingSongId ? 'Дуу засах' : 'Шинэ дуу нэмэх'}
+            </p>
             <div className="flex gap-2">
               <input
                 value={searchQuery}
@@ -267,7 +281,10 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
               {current && (
                 <button
                   type="button"
-                  onClick={() => setEditing(false)}
+                  onClick={() => {
+                    setEditing(false);
+                    setEditingSongId(null);
+                  }}
                   className="flex-1 rounded-xl border border-blush py-3 text-sm font-medium text-muted"
                 >
                   Болих
@@ -282,11 +299,11 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
                 {saving ? 'Хадгалж байна...' : 'Хадгалах'}
               </button>
             </div>
-            {history.length > 0 && (
+            {listedSongs.length > 0 && (
               <section className="pt-2">
-                <div className="mb-2 text-xs font-semibold text-muted">Өмнөх дуунууд</div>
+                <div className="mb-2 text-xs font-semibold text-muted">Тавьсан дуунууд</div>
                 <div className="divide-y divide-blush/60">
-                  {history.map((song) => (
+                  {listedSongs.map((song) => (
                     <div key={song._id} className="flex items-center gap-3 py-3.5">
                       <button
                         type="button"
@@ -352,6 +369,15 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
+                      onClick={startAdding}
+                      aria-label="Шинэ дуу нэмэх"
+                      title="Шинэ дуу нэмэх"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-rose text-white"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
                       onClick={startEditing}
                       aria-label="Хамтын дуу засах"
                       title="Хамтын дуу засах"
@@ -388,11 +414,11 @@ export default function SongOfUsSheet({ open, onClose, onCurrentChange }: Props)
               </div>
             </section>
 
-            {history.length > 0 && (
+            {listedSongs.length > 0 && (
               <section>
-                <div className="mb-2 text-xs font-semibold text-muted">Өмнөх дуунууд</div>
+                <div className="mb-2 text-xs font-semibold text-muted">Тавьсан дуунууд</div>
                 <div className="divide-y divide-blush/60">
-                  {history.map((song) => (
+                  {listedSongs.map((song) => (
                     <div key={song._id} className="flex items-center gap-3 py-3.5">
                       <button
                         type="button"
