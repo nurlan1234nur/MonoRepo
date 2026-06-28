@@ -30,6 +30,7 @@ import LoveNotesSheet from '../components/LoveNotesSheet';
 import AnniversaryReminderSheet from '../components/AnniversaryReminderSheet';
 import CoupleGameSheet from '../components/CoupleGameSheet';
 import BattleshipSheet from '../components/BattleshipSheet';
+import NumberGuessSheet from '../components/NumberGuessSheet';
 import PasswordInput from '../components/PasswordInput';
 import { api } from '../lib/api';
 import {
@@ -144,6 +145,7 @@ export default function More() {
   const [gameOpen, setGameOpen] = useState(false);
   const [gameMenuOpen, setGameMenuOpen] = useState(false);
   const [battleshipOpen, setBattleshipOpen] = useState(false);
+  const [numberGuessOpen, setNumberGuessOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -524,6 +526,7 @@ export default function More() {
       <AnniversaryReminderSheet open={anniversaryReminderOpen} onClose={() => setAnniversaryReminderOpen(false)} />
       <CoupleGameSheet open={gameOpen} onClose={() => setGameOpen(false)} />
       <BattleshipSheet open={battleshipOpen} onClose={() => setBattleshipOpen(false)} />
+      <NumberGuessSheet open={numberGuessOpen} onClose={() => setNumberGuessOpen(false)} />
 
       <Sheet open={gameMenuOpen} onClose={() => setGameMenuOpen(false)} title="Хосуудын тоглоом">
         <div className="space-y-2">
@@ -557,6 +560,22 @@ export default function More() {
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold text-deep">Онгоц буудах</span>
               <span className="mt-0.5 block text-xs text-muted">Дүрст онгоцоо байрлуулаад ээлжээр буудах</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setGameMenuOpen(false);
+              setNumberGuessOpen(true);
+            }}
+            className="flex w-full items-center gap-3.5 rounded-xl bg-white px-4 py-3.5 text-left shadow-sm"
+          >
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-warm text-rose">
+              <KeyRound size={22} aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-deep">Тоо олох</span>
+              <span className="mt-0.5 block text-xs text-muted">4 оронтой нууц тоог alpha/betta-р таах</span>
             </span>
           </button>
         </div>

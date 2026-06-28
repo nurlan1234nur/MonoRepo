@@ -186,3 +186,28 @@ export interface BattleshipGame {
     shots: BattleshipShot[];
   };
 }
+
+export interface NumberGuessAttempt {
+  id: string;
+  userId: string;
+  guess: string;
+  alpha: number;
+  betta: number;
+  createdAt: string;
+}
+
+export interface NumberGuessGame {
+  id: string;
+  status: 'setup' | 'playing' | 'finished';
+  turnUserId: string | null;
+  winnerUserId: string | null;
+  me: {
+    ready: boolean;
+    secret: string;
+  };
+  opponent: {
+    ready: boolean;
+    secret: string;
+  };
+  attempts: NumberGuessAttempt[];
+}
