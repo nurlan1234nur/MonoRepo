@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, CheckCircle2, ChevronRight, Pencil, Plus, Trash2, XCircle } from 'lucide-react';
-import Sheet from './Sheet';
+import { ArrowLeft, CheckCircle2, ChevronRight, Pencil, Plus, Trash2, X, XCircle } from 'lucide-react';
 import { useToast } from './Toast';
 import { useCouple } from '../context/CoupleContext';
 import { api } from '../lib/api';
@@ -22,6 +21,7 @@ export default function CoupleGameSheet({ open, onClose }: Props) {
   const [drafts, setDrafts] = useState<DraftQuestion[]>([emptyQuestion(), emptyQuestion()]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -142,6 +142,7 @@ export default function CoupleGameSheet({ open, onClose }: Props) {
 
   async function deleteQuiz() {
     if (!quiz) return;
+    if (!window.confirm('Энэ тестийг устгах уу?')) return;
     setBusy(true);
     try {
       await api(`/games/quiz/${quiz.id}`, { method: 'DELETE' });
@@ -156,9 +157,26 @@ export default function CoupleGameSheet({ open, onClose }: Props) {
   const activeQuestion = quiz?.questions[quiz.answeredCount];
   const optionText = (question: WhoIsMoreQuiz['questions'][number], id: string | null) => question.options.find((option) => option.id === id)?.text ?? '—';
 
+  if (!open) return null;
+
   return (
-    <Sheet open={open} onClose={onClose} title="Хэн нь илүү?">
-      <div className="max-h-[74vh] overflow-y-auto pb-1">
+    <div className="absolute inset-0 z-[60] flex flex-col bg-cream">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-blush/60 bg-white/90 px-5 backdrop-blur">
+        <div>
+          <div className="text-lg font-semibold text-deep">Хэн нь илүү?</div>
+          <div className="text-[11px] text-muted">Тест үүсгээд partner-аараа бөглүүлэх</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setConfirmExit(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-warm text-deep"
+          aria-label="Тоглоомоос гарах"
+        >
+          <X size={20} />
+        </button>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-4">
         {mode === 'list' ? (
           <div>
             <div className="mb-4 flex items-center justify-between">
@@ -230,6 +248,21 @@ export default function CoupleGameSheet({ open, onClose }: Props) {
           </div>
         )}
       </div>
-    </Sheet>
+
+      {confirmExit && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-deep/55 px-6">
+          <div className="w-full rounded-2xl bg-white p-5 text-center shadow-2xl">
+            <div className="text-lg font-semibold text-deep">Тоглоомоос гарах уу?</div>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Тестүүд болон бөглөсөн явц хадгалагдана. Дараа нь буцаад үргэлжлүүлж болно.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2.5">
+              <button type="button" onClick={() => setConfirmExit(false)} className="rounded-xl border border-blush py-3 text-sm font-semibold text-deep">Үгүй</button>
+              <button type="button" onClick={() => { setConfirmExit(false); onClose(); }} className="rounded-xl bg-rose py-3 text-sm font-semibold text-white">Тийм, гарах</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

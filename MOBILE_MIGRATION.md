@@ -145,6 +145,8 @@
 | 2026-06-29 | Native CoupleContext нэмэв | `/couples/me`-ээс couple мэдээлэл татаж Home/More дээр invite code болон partner info бодитоор харуулдаг болов |
 | 2026-06-29 | PWA Тоо олох тоглоом нэмэв | Couples game menu-д 4 оронтой нууц тоо таах alpha/betta тоглоом нэмэв; backend model/route, realtime refresh, PWA sheet UI орсон |
 | 2026-06-29 | PWA Тоо олох UI сайжруулав | Дүрмийг `!`/help товчоор нээгддэг болгож, тоглоом дундаас шинэ тоглоом эхлэх action нэмэв |
+| 2026-06-29 | PWA Тоо олох approval/fullscreen болгов | Тоо олох тоглоомыг Battleship шиг full-screen view болгож, гарахад confirm, шинэ тоглоом эхлэхэд хоёр талын approval шаарддаг болгов |
+| 2026-06-29 | PWA Хэн нь илүү fullscreen болгов | Хэн нь илүү тоглоомыг bottom sheet-ээс full-screen game view болгож, гарахад confirm болон test delete confirm нэмэв |
 
 ## Working rules
 

@@ -201,6 +201,7 @@ export interface NumberGuessGame {
   status: 'setup' | 'playing' | 'finished';
   turnUserId: string | null;
   winnerUserId: string | null;
+  resetApprovals: string[];
   me: {
     ready: boolean;
     secret: string;

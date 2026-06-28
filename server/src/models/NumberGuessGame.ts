@@ -28,10 +28,10 @@ const numberGuessGameSchema = new Schema(
     status: { type: String, enum: ['setup', 'playing', 'finished'], default: 'setup' },
     turn: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     winner: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    resetApprovals: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true },
 );
 
 export type NumberGuessGameDoc = InferSchemaType<typeof numberGuessGameSchema> & { _id: Types.ObjectId };
 export const NumberGuessGame = model('NumberGuessGame', numberGuessGameSchema);
-

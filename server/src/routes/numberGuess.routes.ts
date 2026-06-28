@@ -74,6 +74,7 @@ function payload(game: Awaited<ReturnType<typeof getGame>>, viewerId: string) {
     status: game.status,
     turnUserId: game.turn?.toString() ?? null,
     winnerUserId: game.winner?.toString() ?? null,
+    resetApprovals: game.resetApprovals.map((user) => user.toString()),
     me: {
       ready: me.ready,
       secret: me.secret,
@@ -116,6 +117,7 @@ numberGuessRouter.post('/secret', asyncHandler(async (req, res) => {
   }
   player.secret = code;
   player.ready = true;
+  game.resetApprovals.splice(0, game.resetApprovals.length);
   if (game.players.length === 2 && game.players.every((item) => item.ready)) {
     game.status = 'playing';
     game.turn = game.players[Math.floor(Math.random() * 2)].user;
@@ -153,18 +155,39 @@ numberGuessRouter.post('/guess', asyncHandler(async (req, res) => {
   res.json({ game: payload(game, req.userId!) });
 }));
 
-numberGuessRouter.post('/reset', asyncHandler(async (req, res) => {
-  const game = await getGame(req.coupleId!);
+function resetGameState(game: Awaited<ReturnType<typeof getGame>>): void {
   game.status = 'setup';
   game.turn = null;
   game.winner = null;
   game.attempts.splice(0, game.attempts.length);
+  game.resetApprovals.splice(0, game.resetApprovals.length);
   for (const player of game.players) {
     player.secret = '';
     player.ready = false;
+  }
+}
+
+numberGuessRouter.post('/reset-request', asyncHandler(async (req, res) => {
+  const game = await getGame(req.coupleId!);
+  if (!game.players.some((player) => player.user.toString() === req.userId)) {
+    res.status(403).json({ error: 'Тоглогч олдсонгүй' });
+    return;
+  }
+  if (!game.resetApprovals.some((user) => user.toString() === req.userId)) {
+    game.resetApprovals.push(req.userId as never);
+  }
+  if (game.players.length === 2 && game.players.every((player) => game.resetApprovals.some((user) => user.toString() === player.user.toString()))) {
+    resetGameState(game);
   }
   await game.save();
   notifyChanged(req.coupleId!);
   res.json({ game: payload(game, req.userId!) });
 }));
 
+numberGuessRouter.post('/reset-cancel', asyncHandler(async (req, res) => {
+  const game = await getGame(req.coupleId!);
+  game.resetApprovals = game.resetApprovals.filter((user) => user.toString() !== req.userId) as never;
+  await game.save();
+  notifyChanged(req.coupleId!);
+  res.json({ game: payload(game, req.userId!) });
+}));
