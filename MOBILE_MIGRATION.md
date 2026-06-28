@@ -144,6 +144,7 @@
 | 2026-06-29 | Native password change нэмэв | More tab дээр current/new/confirm password form, show passwords, `/auth/me/password` submit flow нэмэв |
 | 2026-06-29 | Native CoupleContext нэмэв | `/couples/me`-ээс couple мэдээлэл татаж Home/More дээр invite code болон partner info бодитоор харуулдаг болов |
 | 2026-06-29 | PWA Тоо олох тоглоом нэмэв | Couples game menu-д 4 оронтой нууц тоо таах alpha/betta тоглоом нэмэв; backend model/route, realtime refresh, PWA sheet UI орсон |
+| 2026-06-29 | PWA Тоо олох UI сайжруулав | Дүрмийг `!`/help товчоор нээгддэг болгож, тоглоом дундаас шинэ тоглоом эхлэх action нэмэв |
 
 ## Working rules
 

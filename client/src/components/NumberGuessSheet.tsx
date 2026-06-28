@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, RotateCcw } from 'lucide-react';
+import { CheckCircle2, HelpCircle, RotateCcw } from 'lucide-react';
 import Sheet from './Sheet';
 import { useToast } from './Toast';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,7 @@ export default function NumberGuessSheet({ open, onClose }: Props) {
   const [game, setGame] = useState<NumberGuessGame | null>(null);
   const [secret, setSecret] = useState('');
   const [guess, setGuess] = useState('');
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -87,6 +88,9 @@ export default function NumberGuessSheet({ open, onClose }: Props) {
   }
 
   async function resetGame() {
+    if (game?.status === 'playing' && !window.confirm('Одоогийн тоглоомыг дуусгаад шинэ тоглоом эхлүүлэх үү?')) {
+      return;
+    }
     setBusy(true);
     try {
       const result = await api<{ game: NumberGuessGame }>('/number-guess/reset', { method: 'POST' });
@@ -114,14 +118,51 @@ export default function NumberGuessSheet({ open, onClose }: Props) {
   return (
     <Sheet open={open} onClose={onClose} title="Тоо олох">
       <div className="max-h-[74vh] overflow-y-auto pb-1">
-        <div className="mb-4 rounded-2xl bg-warm px-4 py-3 text-sm leading-relaxed text-deep">
-          Хоёулаа 4 оронтой нууц тоо оруулна. Зөв цифр + зөв байрлал бол <b>alpha</b>, зөв цифр + буруу байрлал бол <b>betta</b>. 4 alpha түрүүлж олсон нь хожно.
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-base font-semibold text-deep">Alpha / Betta</div>
+            <div className="text-xs text-muted">4 оронтой нууц тоо таах тоглоом</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setRulesOpen((value) => !value)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-warm text-rose"
+              aria-label="Дүрэм харах"
+              title="Дүрэм"
+            >
+              <HelpCircle size={18} />
+            </button>
+            {game && game.status !== 'setup' && (
+              <button
+                type="button"
+                onClick={() => void resetGame()}
+                disabled={busy}
+                className="flex h-10 items-center gap-1.5 rounded-xl border border-rose/40 px-3 text-xs font-semibold text-rose disabled:opacity-50"
+                title="Шинэ тоглоом"
+              >
+                <RotateCcw size={15} /> Шинэ
+              </button>
+            )}
+          </div>
         </div>
+
+        {rulesOpen && (
+          <div className="mb-4 rounded-2xl bg-warm px-4 py-3 text-sm leading-relaxed text-deep">
+            <div className="mb-1 font-semibold">Дүрэм</div>
+            Хоёулаа 4 оронтой нууц тоо оруулна. Зөв цифр + зөв байрлал бол <b>alpha</b>, зөв цифр + буруу байрлал бол <b>betta</b>. 4 alpha түрүүлж олсон нь хожно.
+          </div>
+        )}
 
         {loading || !game ? (
           <p className="py-12 text-center text-sm text-muted">Уншиж байна…</p>
         ) : game.status === 'setup' ? (
           <div className="space-y-4">
+            {(game.me.ready || game.opponent.ready || game.attempts.length > 0) && (
+              <button type="button" onClick={() => void resetGame()} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose/40 py-3 text-sm font-semibold text-rose disabled:opacity-50">
+                <RotateCcw size={16} /> Шинэ тоглоом эхлэх
+              </button>
+            )}
             <div className="rounded-2xl border border-blush/70 bg-white p-4">
               <div className="mb-2 text-sm font-semibold text-deep">Таны нууц тоо</div>
               <input
